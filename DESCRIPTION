@@ -1,0 +1,33 @@
+Package: MedidoR
+Type: Package
+Title: Aerial Photogrammetry Analyses
+Version: 0.1.0
+Authors@R: 
+  c(person(given = "Lucas",
+           family = "de Oliveira",
+           role = "cre",
+           email = "oceano2014lucas@gmail.com",
+           comment = c(ORCID = "0000-0002-6814-6052"))
+           )
+Maintainer: Lucas de Oliveira <oceano2014lucas@gmail.com>
+Description: A powerful graphical user interface for photogrammetry analyses.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0)
+Imports:
+    stats,
+    utils,
+    magrittr,
+    caret,
+    DT,
+    graphics,
+    ggplot2,
+    htmltools,
+    imager,
+    performance,
+    readxl,
+    shinycssloaders,
+    writexl
+RoxygenNote: 7.3.1
