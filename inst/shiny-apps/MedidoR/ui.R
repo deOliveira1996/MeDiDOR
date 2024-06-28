@@ -2,7 +2,7 @@
 
 ui <- shiny::fluidPage(
   htmltools::includeCSS("photogrammetry.css"),
-  shiny::titlePanel("Photogrammetry GUI"),
+  shiny::titlePanel("MeDiDOR"),
   shiny::sidebarLayout(
     shiny::sidebarPanel(
       shiny::wellPanel(
@@ -86,7 +86,7 @@ ui <- shiny::fluidPage(
           )
         ),
 
-        shiny::actionButton("closeBtn", "Close aplication", width = "100%"),
+        shiny::actionButton("closeBtn", "Close application", width = "100%"),
       )
     ),
 
@@ -99,14 +99,14 @@ ui <- shiny::fluidPage(
           shiny::h1("How to use the app ..."),
           shiny::p(
             "The",
-            shiny::strong(shiny::em("Photogrammetry GUI")),
+            shiny::strong(shiny::em("MeDiDOR")),
             "API is a user
                     interface that was built using the Shiny App, a supplementary
                     package that enables creating an interactive environment for data
                     presentation and collection."
           ),
           shiny::p(
-            shiny::strong(shiny::em("Photogrammetry GUI")),
+            shiny::strong(shiny::em("MeDiDOR")),
             "was developed with the aim of
                       optimizing
                     the analysis of aerial photogrammetry data using pixel scale
@@ -183,7 +183,7 @@ ui <- shiny::fluidPage(
                     (in blue) will define intervals at every 10% of the measured body
                     length. These lines will serve as guides to define the widths along
                     the body of the animal. Lastly, the ",
-            shiny::strong(shiny::em("Photogrammetry GUI")),
+            shiny::strong(shiny::em("MeDiDOR")),
             " Will request the user to define
                     the fluke width measurements, this measurement will be highlighted
                     with a green line. Each marked point for width
@@ -209,7 +209,7 @@ ui <- shiny::fluidPage(
                     as a reference scale, the  collection date, the flight altitude,
                     takeoff altitude, and the actual length of the object. With this
                     information, the",
-            shiny::strong(shiny::em('Photogrammetry GUI')),
+            shiny::strong(shiny::em('MeDiDOR')),
             "will be able
                     to construct the model."
           ),
