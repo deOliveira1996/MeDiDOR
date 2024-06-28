@@ -389,6 +389,22 @@ server <- function(input, output, session) {
     })
   })
 
+  # shiny::observeEvent(input$crop, {
+  #
+  #   if (!is.null(input$file) && !is.null(input$file$datapath)) {
+  #     img1 <- imager::load.image(input$file$datapath) %>%
+  #       imager::grabRect(output = "im")
+  #   }
+  #
+  #   output$output2 = shiny::renderImage({
+  #     bbox <- c(input$crop$xmin = {input$crop$xmin}
+  #               input$crop$ymin = {input$crop$ymin}
+  #               input$crop$xmax = {input$crop$xmax}
+  #               input$crop$ymax = {input$crop$ymax}
+  #     )
+  #   })
+  # })
+
   #########################################
   # Capture length and width measurements #
   #########################################

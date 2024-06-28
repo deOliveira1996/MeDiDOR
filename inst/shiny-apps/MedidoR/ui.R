@@ -11,7 +11,8 @@ ui <- shiny::fluidPage(
         shiny::fileInput(
           "file",
           "Select an image file",
-          accept = c(".png", ".jpeg", ".jpg", ".bmp", ".gif", ".tiff")
+          accept = c(".png", ".jpeg", ".jpg",
+                     ".bmp", ".gif", ".tiff")
         ),
         shiny::actionButton("path", "Change working directory", width = "100%"),
         shiny::helpText(
@@ -256,9 +257,11 @@ ui <- shiny::fluidPage(
         ),
         shiny::tabPanel(
           "Image plot",
-          shiny::plotOutput("imagePlot", height = "600", click = "plot_click"),
-          shiny::actionButton("saveBtn", "ADD IN", width = "45%"),
-          shiny::actionButton("clearBtn", "Clear Measurements", width = "45%")
+          shiny::plotOutput("imagePlot", height = "600",
+                            click = "plot_click", brush = "crop"),
+          shiny::actionButton("cropBtn", "CROP", width = "33%"),
+          shiny::actionButton("saveBtn", "ADD IN", width = "33%"),
+          shiny::actionButton("clearBtn", "Clear Measurements", width = "33%")
         ),
 
         shiny::tabPanel(
