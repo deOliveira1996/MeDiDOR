@@ -24,20 +24,20 @@ ui <- shiny::fluidPage(
         ),
         shiny::fluidRow(
           column(width = 6, actionButton("create", "CREATE", width = "100%")),
-          column(width = 6, actionButton("import", "IMPORT", width = "100%"))
-        ),
-        shiny::helpText("The", strong("CREATE"), "button creates a data frame
+          column(width = 6, actionButton("import", "IMPORT", width = "100%")),
+          shiny::helpText("The", strong("CREATE"), "button creates a data frame
                         (for measurements every 5% or 10% of the body length)"),
-        shiny::helpText("The", strong("IMPORT"), "button imports a data frame
+          shiny::helpText("The", strong("IMPORT"), "button imports a data frame
                         (for measurements every 5% or 10% of the body length)
                         already existing in the directory.")
+        )
       ),
       shiny::wellPanel(
         shiny::fluidRow(
           shiny::strong("Image parameters"),
-          shiny::textInput("Species", "Species name:", placeholder = "Given Species name")
-        ),
-        shiny::textInput("ImageID", "Image-ID:", placeholder = "Given the Image-ID")
+          shiny::textInput("Species", "Species name:", placeholder = "Given Species name"),
+          shiny::textInput("ImageID", "Image-ID:", placeholder = "Given the Image-ID"),
+        )
       ),
         shiny::fluidRow(
           shiny::column(
@@ -76,7 +76,9 @@ ui <- shiny::fluidPage(
             width = 6,
             shiny::textInput("Date", "Image collection date: YYYY-MM-DD", value = "")
           ),
-          shiny::column(width = 6, shiny::textInput("obs", "Observer:", value = "")),
+          shiny::column(width = 6,
+                        shiny::textInput("obs", "Observer:",
+                                         value = "")),
           shiny::column(
             width = 12,
             shiny::textAreaInput(
@@ -88,9 +90,8 @@ ui <- shiny::fluidPage(
           )
         ),
 
-        shiny::actionButton("closeBtn", "Close application", width = "100%"),
-      )
-    ),
+        shiny::actionButton("closeBtn", "Close application", width = "100%")
+      ),
 
     shiny::mainPanel(
       width = 8,
@@ -254,8 +255,9 @@ ui <- shiny::fluidPage(
             "Now that you've learned how to use",
             shiny::strong(shiny::em(" PhotogrammetryGUI")),
             ", have fun!"
-          ),
+          )
         ),
+
         shiny::tabPanel(
           "Image plot",
           shiny::plotOutput("imagePlot", height = "600",
@@ -273,6 +275,7 @@ ui <- shiny::fluidPage(
             type = getOption("spinner.type", default = 4)
           )
         ),
+
         shiny::tabPanel(
           "Calibration",
           shiny::p(),
@@ -304,6 +307,7 @@ ui <- shiny::fluidPage(
             )
           )
         ),
+
         shiny::tabPanel(
           "Measured Whales",
           shiny::h1("Measurement distribution histogram"),
@@ -327,9 +331,8 @@ ui <- shiny::fluidPage(
               shiny::plotOutput("mwhale"),
               type = getOption("spinner.type", default = 4)
             )
-            ,
           )
-        ),
+        )
       )
     )
   )
