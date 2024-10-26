@@ -8,22 +8,16 @@ ui <- shiny::fluidPage(
       shiny::wellPanel(
         shiny::fluidRow(shiny::strong("Input Data")),
         width = 2,
+        shiny::actionButton("path", "Change working directory", width = "100%"),
         shiny::fileInput(
           "file",
           "Select an image file",
           accept = c(".png", ".jpeg", ".jpg",
                      ".bmp", ".gif", ".tiff")
         ),
-        shiny::actionButton("path", "Change working directory", width = "100%"),
-        shiny::helpText(
-          "The start button must be clicked the first time the
-                             application is used, this button
-                             creates an empty dataframe
-                             to start the measurements."
-        ),
         shiny::radioButtons(
           "segments",
-          "Width interval:",
+          "Select the desired width interval to CREATE or IMPORT the dataset:",
           choices =
             list("10% interval" = 1, "5% interval" = 2),
           selected = 2
@@ -31,13 +25,20 @@ ui <- shiny::fluidPage(
         shiny::fluidRow(
           column(width = 6, actionButton("create", "CREATE", width = "100%")),
           column(width = 6, actionButton("import", "IMPORT", width = "100%"))
-        )
+        ),
+        shiny::helpText("The", strong("CREATE"), "button creates a data frame
+                        (for measurements every 5% or 10% of the body length)"),
+        shiny::helpText("The", strong("IMPORT"), "button imports a data frame
+                        (for measurements every 5% or 10% of the body length)
+                        already existing in the directory.")
       ),
       shiny::wellPanel(
         shiny::fluidRow(
           shiny::strong("Image parameters"),
           shiny::textInput("Species", "Species name:", placeholder = "Given Species name")
         ),
+        shiny::textInput("ImageID", "Image-ID:", placeholder = "Given the Image-ID")
+      ),
         shiny::fluidRow(
           shiny::column(
             width = 6,

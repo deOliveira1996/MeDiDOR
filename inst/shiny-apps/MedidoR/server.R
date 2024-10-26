@@ -75,6 +75,8 @@ server <- function(input, output, session) {
     fw = numeric()
   )
 
+  cur_dir <- shiny::reactiveVal(value = as.character())
+
   #################################
   # Setting the working directory #
   #################################
@@ -92,7 +94,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$confirmBtn, {
     setwd(input$wd)
 
-    path <- shiny::reactiveVal(value = getwd())
+    cur_dir <- shiny::reactiveVal(value = input$wd)
 
     shiny::removeModal()  # close dialog box
   })
@@ -102,16 +104,23 @@ server <- function(input, output, session) {
   ###############################
 
   shiny::observeEvent(input$create, {
-    path <- getwd()
-    p10 <- paste(path, "/Measurements_10.xlsx", sep = "")
-    p10.1 <- paste(path, "/Measurements_10_1.xlsx", sep = "")
-    p05 <- paste(path, "/Measurements_05.xlsx", sep = "")
-    p05.1 <- paste(path, "/Measurements_05_1.xlsx", sep = "")
 
-    data_in <- list("Measurements_10.xlsx", "Measurements_05.xlsx") %in%
+    data_in <- list("10%_interval", "05%_interval") %in%
       list.files()
 
     if (input$segments == 1 && data_in[1] == F) {
+
+      dir.create("./10%_interval")
+
+      cur_dir <- shiny::reactiveVal(value = paste(getwd(), "/10%_interval",
+                                                  sep = ""))
+
+      setwd(cur_dir())
+      getwd()
+
+      p10 <- paste(path, "./10%_interval/Measurements_10.xlsx", sep = "")
+      p10.1 <- paste(path, "./10%_interval/Measurements_10_1.xlsx", sep = "")
+
       measurements <- create_data(segments = 1,
                                   path = p10,
                                   path2 = p10.1)
@@ -143,6 +152,18 @@ server <- function(input, output, session) {
     }
 
     if (input$segments == 2 && data_in[2] == F) {
+
+      dir.create("./05%_interval")
+
+      cur_dir <- shiny::reactiveVal(value = paste(getwd(), "/05%_interval",
+                                                  sep = ""))
+
+      setwd(cur_dir())
+      getwd()
+
+      p05 <- paste(path, "./05%_interval/Measurements_05.xlsx", sep = "")
+      p05.1 <- paste(path, "./05%_interval/Measurements_05_1.xlsx", sep = "")
+
       measurements <- create_data(segments = 2,
                                   path = p05,
                                   path2 = p05.1)
@@ -175,17 +196,17 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$import, {
-    path <- getwd()
-    p10 <- paste(path, "/Measurements_10.xlsx", sep = "")
-    p10.1 <- paste(path, "/Measurements_10_1.xlsx", sep = "")
-    p05 <- paste(path, "/Measurements_05.xlsx", sep = "")
-    p05.1 <- paste(path, "/Measurements_05_1.xlsx", sep = "")
 
-    data_in <- list("Measurements_10.xlsx", "Measurements_05.xlsx") %in%
+    data_in <- list("10%_interval", "05%_interval") %in%
       list.files()
 
     if (input$segments == 1) {
       if (data_in[1] == T) {
+
+        path <- getwd()
+        p10 <- paste(path, "/10%_interval//Measurements_10.xlsx", sep = "")
+        p10.1 <- paste(path, "/10%_interval//Measurements_10_1.xlsx", sep = "")
+
         shiny::showModal(
           shiny::modalDialog(
             title = "Dataframe already exist in directory",
@@ -215,6 +236,11 @@ server <- function(input, output, session) {
 
     if (input$segments == 2) {
       if (data_in[2] == T) {
+
+        path <- getwd()
+        p05 <- paste(path, "/05%_interval//Measurements_05.xlsx", sep = "")
+        p05.1 <- paste(path, "/05%_interval//Measurements_05_1.xlsx", sep = "")
+
         shiny::showModal(
           shiny::modalDialog(
             title = "Dataframe already exist in directory",
@@ -250,8 +276,8 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$file, {
     # Store the image name
-    newdata_10$ID = input$file$name
-    newdata_05$ID = input$file$name
+    newdata_10$ID = input$ImageID
+    newdata_05$ID = input$ImageID
 
     shiny::req(input$file)
 
@@ -262,7 +288,7 @@ server <- function(input, output, session) {
 
     output$imagePlot <- shiny::renderPlot({
       img1 %>%
-        graphics::plot(x = img1, main = input$file$name)
+        graphics::plot(x = img1, main = input$ImageID)
 
       # Add red dots for length points
       if (!is.null(measured_animals$length_measurement) &&
