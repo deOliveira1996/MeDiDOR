@@ -112,14 +112,12 @@ server <- function(input, output, session) {
 
       dir.create("./10%_interval")
 
-      cur_dir <- shiny::reactiveVal(value = paste(getwd(), "/10%_interval",
-                                                  sep = ""))
+      cur_dir(paste(getwd(), "/10%_interval", sep = ""))
 
       setwd(cur_dir())
-      getwd()
 
-      p10 <- paste(cur_dir, "./10%_interval/Measurements_10.xlsx", sep = "")
-      p10.1 <- paste(cur_dir, "./10%_interval/Measurements_10_1.xlsx", sep = "")
+      p10 <- paste(cur_dir(), "./10%_interval/Measurements_10.xlsx", sep = "")
+      p10.1 <- paste(cur_dir(), "./10%_interval/Measurements_10_1.xlsx", sep = "")
 
       measurements <- create_data(segments = 1,
                                   path = p10,
@@ -155,14 +153,12 @@ server <- function(input, output, session) {
 
       dir.create("./05%_interval")
 
-      cur_dir <- shiny::reactiveVal(value = paste(getwd(), "/05%_interval",
-                                                  sep = ""))
+      cur_dir(paste(getwd(), "/05%_interval", sep = ""))
 
       setwd(cur_dir())
-      getwd()
 
-      p05 <- paste(cur_dir, "./05%_interval/Measurements_05.xlsx", sep = "")
-      p05.1 <- paste(cur_dir, "./05%_interval/Measurements_05_1.xlsx", sep = "")
+      p05 <- paste(cur_dir(), "./05%_interval/Measurements_05.xlsx", sep = "")
+      p05.1 <- paste(cur_dir(), "./05%_interval/Measurements_05_1.xlsx", sep = "")
 
       measurements <- create_data(segments = 2,
                                   path = p05,
