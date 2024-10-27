@@ -9,4 +9,3 @@ create_data(segments = 2, path = NULL, path2 = NULL)
 \description{
 create_data
 }
-\keyword{internal}

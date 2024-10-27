@@ -11,7 +11,7 @@ Authors@R:
            )
 Maintainer: Lucas de Oliveira <oceano2014lucas@gmail.com>
 Description: A powerful graphical user interface for photogrammetry analyses.
-License: What license is it under?
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:

@@ -84,7 +84,7 @@ calib <- function(x) {
 #' @importFrom shiny showModal
 #' @importFrom shiny modalDialog
 #' @importFrom shiny modalButton
-#' @keywords internal
+#' @export
 
 create_data <- function(segments = 2,
                         path = NULL,

@@ -76,6 +76,7 @@ server <- function(input, output, session) {
   )
 
   cur_dir <- shiny::reactiveVal(value = as.character())
+  user_dir <- shiny::reactiveVal(value = as.character())
 
   #################################
   # Setting the working directory #
@@ -94,7 +95,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$confirmBtn, {
     setwd(input$wd)
 
-    cur_dir <- shiny::reactiveVal(value = input$wd)
+    user_dir(input$wd)
 
     shiny::removeModal()  # close dialog box
   })
@@ -112,12 +113,10 @@ server <- function(input, output, session) {
 
       dir.create("./10%_interval")
 
-      cur_dir(paste(getwd(), "/10%_interval", sep = ""))
+      cur_dir(paste(user_dir(), "/10%_interval", sep = ""))
 
-      setwd(cur_dir())
-
-      p10 <- paste(cur_dir(), "./10%_interval/Measurements_10.xlsx", sep = "")
-      p10.1 <- paste(cur_dir(), "./10%_interval/Measurements_10_1.xlsx", sep = "")
+      p10 <- paste(cur_dir(), "/Measurements_10.xlsx", sep = "")
+      p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx", sep = "")
 
       measurements <- create_data(segments = 1,
                                   path = p10,
@@ -153,12 +152,10 @@ server <- function(input, output, session) {
 
       dir.create("./05%_interval")
 
-      cur_dir(paste(getwd(), "/05%_interval", sep = ""))
+      cur_dir(paste(user_dir(), "/05%_interval", sep = ""))
 
-      setwd(cur_dir())
-
-      p05 <- paste(cur_dir(), "./05%_interval/Measurements_05.xlsx", sep = "")
-      p05.1 <- paste(cur_dir(), "./05%_interval/Measurements_05_1.xlsx", sep = "")
+      p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
+      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx", sep = "")
 
       measurements <- create_data(segments = 2,
                                   path = p05,
@@ -199,9 +196,10 @@ server <- function(input, output, session) {
     if (input$segments == 1) {
       if (data_in[1] == T) {
 
-        path <- getwd()
-        p10 <- paste(path, "/10%_interval//Measurements_10.xlsx", sep = "")
-        p10.1 <- paste(path, "/10%_interval//Measurements_10_1.xlsx", sep = "")
+        cur_dir(paste(user_dir(), "/10%_interval", sep = ""))
+
+        p10 <- paste(cur_dir(), "/Measurements_10.xlsx", sep = "")
+        p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx", sep = "")
 
         shiny::showModal(
           shiny::modalDialog(
@@ -233,9 +231,10 @@ server <- function(input, output, session) {
     if (input$segments == 2) {
       if (data_in[2] == T) {
 
-        path <- getwd()
-        p05 <- paste(path, "/05%_interval//Measurements_05.xlsx", sep = "")
-        p05.1 <- paste(path, "/05%_interval//Measurements_05_1.xlsx", sep = "")
+        cur_dir(paste(user_dir(), "/05%_interval", sep = ""))
+
+        p05 <- paste(cur_dir(), "/05%_interval/Measurements_05.xlsx", sep = "")
+        p05.1 <- paste(cur_dir(), "/05%_interval/Measurements_05_1.xlsx", sep = "")
 
         shiny::showModal(
           shiny::modalDialog(
@@ -284,7 +283,7 @@ server <- function(input, output, session) {
 
     output$imagePlot <- shiny::renderPlot({
       img1 %>%
-        graphics::plot(x = img1, main = input$ImageID)
+        graphics::plot(x = img1, main = input$file$name)
 
       # Add red dots for length points
       if (!is.null(measured_animals$length_measurement) &&
@@ -683,9 +682,8 @@ server <- function(input, output, session) {
       )
 
       # Specify the absolute path to save the file
-      path <- getwd()
 
-      p10 <- paste(path, "/Measurements_10.xlsx", sep = "")
+      p10 <- paste(cur_dir(), "/Measurements_10.xlsx", sep = "")
 
       measurements <- shiny::reactiveFileReader(
         session = session,
@@ -701,7 +699,7 @@ server <- function(input, output, session) {
       writexl::write_xlsx(measurements, path = p10)
 
       writexl::write_xlsx(dtfilter(measurements),
-                          path = paste(path, "/Measurements_10_1.xlsx", sep = ""))
+                          path = paste(cur_dir(), "/Measurements_10_1.xlsx", sep = ""))
 
       shiny::showModal(
         shiny::modalDialog(
@@ -762,9 +760,8 @@ server <- function(input, output, session) {
       )
 
       # Specify the absolute path to save the file
-      path <- getwd()
 
-      p05 <- paste(path, "/Measurements_05.xlsx", sep = "")
+      p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
 
       measurements <- shiny::reactiveFileReader(
         session = session,
@@ -780,7 +777,7 @@ server <- function(input, output, session) {
       writexl::write_xlsx(measurements, path = p05)
 
       writexl::write_xlsx(dtfilter(measurements),
-                          path = paste(path, "/Measurements_05_1.xlsx", sep = ""))
+                          path = paste(cur_dir(), "/Measurements_05_1.xlsx", sep = ""))
 
       shiny::showModal(
         shiny::modalDialog(
@@ -808,6 +805,7 @@ server <- function(input, output, session) {
     measured_animals$length_measurement <- data.frame()
     measured_animals$width_measurements <- data.frame()
     shiny::updateTextInput(inputId = "comments", value = "")
+    shiny::updateTextInput(ImageId = "ImageId", value = "")
     shiny::updateRadioButtons(inputId = "score", selected = 4)
     shiny::updateNumericInput(inputId = "alt", value = 20)
 
@@ -818,9 +816,10 @@ server <- function(input, output, session) {
   ###########################################
 
   shiny::observeEvent(input$calib, {
-    file_path1 <- paste(getwd(), "/calib.xlsx", sep = "")
 
-    mdata <- calib(file_path1)
+    calib_path <- input$calib_path
+
+    mdata <- calib(calib_path)
 
     mdata <- stats::na.omit(mdata)
 
@@ -842,35 +841,48 @@ server <- function(input, output, session) {
     mdata$LcGSD <- mdata$Pixel * mdata$cGSD
 
     output$mplot <- shiny::renderPlot({
-      ggplot2::ggplot(mdata, ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)) +
-        ggplot2::geom_point() + ggplot2::geom_smooth(method = "lm", se = T) + ggplot2::theme_classic()
 
-    })
+      ggplot2::ggplot(mdata,
+                      ggplot2::aes(
+                        x = as.numeric(C_Alt),
+                        y = eGSD)) +
+        ggplot2::geom_point() +
+        ggplot2::geom_smooth(method = "lm",
+                             se = T) +
+        ggplot2::theme_classic()
+      })
 
     output$checkm <- shiny::renderPlot({
-      performance::check_model(m1, check = c("linearity", "qq", "homogeneity", "outliers"))
 
-    })
+      performance::check_model(
+        m1, check = c("linearity", "qq",
+                      "homogeneity", "outliers")
+        )
+      })
 
     output$meanplot <- shiny::renderPlot({
       mdata <- stats::na.omit(mdata)
 
       pd <- ggplot2::position_dodge(0.1)
 
-      p <- ggplot2::ggplot(mdata, ggplot2::aes(x = as.numeric(C_Alt), y = LcGSD))
-
-      p + ggplot2::stat_summary(
-        fun.data = "mean_sdl",
-        fun.args = list(mult = 1),
-        geom = "errorbar",
-        color = "black",
-        width = 0.1
-      ) +
+      ggplot2::ggplot(mdata,
+                            ggplot2::aes(
+                              x = as.numeric(C_Alt),
+                              y = LcGSD)) +
+        ggplot2::stat_summary(
+          fun.data = "mean_sdl",
+          fun.args = list(mult = 1),
+          geom = "errorbar",
+          color = "black",
+          width = 0.1
+        ) +
         ggplot2::stat_summary(fun = mean,
                               geom = "point",
                               color = "black") +
-        ggplot2::theme_classic(base_family = "serif", base_size = 14) +
-        ggplot2::ylab("Measurements (meters)") + ggplot2::xlab("Altitude (m)") +
+        ggplot2::theme_classic(base_family = "serif",
+                               base_size = 14) +
+        ggplot2::ylab("Measurements (meters)") +
+        ggplot2::xlab("Altitude (m)") +
         ggplot2::ggtitle(
           "Mean and RMSE values estimated",
           subtitle = paste(
@@ -885,13 +897,15 @@ server <- function(input, output, session) {
         ggplot2::geom_hline(
           ggplot2::aes(
             yintercept = ObjLength / 100,
-            linetype = paste("Reference object ", ObjLength, " centimeters")
+            linetype = paste("Reference object ",
+                             ObjLength, " centimeters")
           ),
           colour = 'blue',
           linewidth = 1
         ) +
         ggplot2::geom_hline(
-          ggplot2::aes(yintercept = mean(LcGSD), linetype = "Mean estimated length"),
+          ggplot2::aes(yintercept = mean(LcGSD),
+                       linetype = "Mean estimated length"),
           colour = 'red',
           linewidth = 1
         ) +
@@ -906,16 +920,109 @@ server <- function(input, output, session) {
           legend.title = ggplot2::element_text(size = 14),
           legend.position = "top"
         )
-    })
+      })
+
+    if(input$save_plot == "Y"){
+
+      p1 <- ggplot2::ggplot(mdata,
+                            ggplot2::aes(
+                              x = as.numeric(C_Alt),
+                              y = eGSD)) +
+        ggplot2::geom_point() +
+        ggplot2::geom_smooth(method = "lm",
+                             se = T) +
+        ggplot2::theme_classic()
+
+      p2 <- performance::check_model(
+        m1, check = c("linearity", "qq",
+                      "homogeneity", "outliers"),
+        panel = T
+      )
+      setwd(cur_dir())
+      png("Diagnostic_plot.png",
+          width = 720, height = 480,
+          units = "px")
+      print(p2)
+      dev.off()
+      setwd(user_dir())
+
+      p3 <- ggplot2::ggplot(mdata,
+                            ggplot2::aes(
+                              x = as.numeric(C_Alt),
+                              y = LcGSD)) +
+        ggplot2::stat_summary(
+          fun.data = "mean_sdl",
+          fun.args = list(mult = 1),
+          geom = "errorbar",
+          color = "black",
+          width = 0.1
+        ) +
+        ggplot2::stat_summary(fun = mean,
+                              geom = "point",
+                              color = "black") +
+        ggplot2::theme_classic(base_family = "serif",
+                               base_size = 14) +
+        ggplot2::ylab("Measurements (meters)") +
+        ggplot2::xlab("Altitude (m)") +
+        ggplot2::ggtitle(
+          "Mean and RMSE values estimated",
+          subtitle = paste(
+            "RMSE = ",
+            round(model1$results$RMSE, digits = 3),
+            "R² = ",
+            round(model1$results$Rsquared, digits = 3),
+            "MAE = ",
+            round(model1$results$MAE, digits = 3)
+          )
+        ) +
+        ggplot2::geom_hline(
+          ggplot2::aes(
+            yintercept = ObjLength / 100,
+            linetype = paste("Reference object ",
+                             ObjLength, " centimeters")
+          ),
+          colour = 'blue',
+          linewidth = 1
+        ) +
+        ggplot2::geom_hline(
+          ggplot2::aes(yintercept = mean(LcGSD),
+                       linetype = "Mean estimated length"),
+          colour = 'red',
+          linewidth = 1
+        ) +
+        ggplot2::scale_linetype_manual(
+          name = "Reference object",
+          values = c(2, 2),
+          guide = ggplot2::guide_legend(override.aes =
+                                          list(color = c("red", "blue")))
+        ) +
+        ggplot2::theme(
+          axis.text = ggplot2::element_text(size = 14),
+          legend.title = ggplot2::element_text(size = 14),
+          legend.position = "top"
+        )
+
+      ggplot2::ggsave(filename = "Regression_plot.png",
+                      plot = p1,
+                      path = cur_dir(),
+                      width = 720, height = 480,
+                      units = "px")
+
+      ggplot2::ggsave(filename = "Variance_plot.png",
+                      plot = p3,
+                      path = cur_dir(),
+                      width = 720, height = 480,
+                      units = "px")
+    }
 
     file <- ifelse(input$segments == 1,
                    "Measurements_10_1.xlsx",
                    "Measurements_05_1.xlsx")
 
-    if (file %in% list.files()) {
+    if (file %in% list.files(path = cur_dir())) {
       m1 <- stats::lm(eGSD ~ as.numeric(C_Alt), data = mdata)
 
-      file_path <- paste(getwd(), file, sep = "/")
+      file_path <- paste(cur_dir(), file, sep = "/")
 
       measurements <- readxl::read_xlsx(path = file_path, col_names = T)
 
@@ -927,7 +1034,7 @@ server <- function(input, output, session) {
       measurements[, 15] <- round(measurements[, 15], digits = 2)
 
       writexl::write_xlsx(measurements, path = paste(
-        getwd(),
+        cur_dir(),
         ifelse(
           input$segments == 1,
           "/Measurements_10_1.xlsx",
@@ -939,7 +1046,7 @@ server <- function(input, output, session) {
       # Display measurements table
       output$mTable <- DT::renderDataTable({
         file_path <- paste(
-          getwd(),
+          cur_dir(),
           ifelse(
             input$segments == 1,
             "/Measurements_10_1.xlsx",
@@ -960,7 +1067,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$n_whales, {
     if (input$n_whales != 0) {
       file_path <- paste(
-        getwd(),
+        cur_dir(),
         ifelse(
           input$segments == 1,
           "/Measurements_10_1.xlsx",

@@ -35,6 +35,7 @@ ui <- shiny::fluidPage(
       shiny::wellPanel(
         shiny::fluidRow(
           shiny::strong("Image parameters"),
+          shiny::p(),
           shiny::textInput("Species", "Species name:", placeholder = "Given Species name"),
           shiny::textInput("ImageID", "Image-ID:", placeholder = "Given the Image-ID"),
         )
@@ -278,8 +279,23 @@ ui <- shiny::fluidPage(
 
         shiny::tabPanel(
           "Calibration",
+          shiny::textInput(inputId = "calib_path",
+                           label = "Calibration data path",
+                           value = "",
+                           placeholder = "Set the desired calibration data path (.xlsx)",
+                           width = "75%"
+                           ),
           shiny::p(),
-          shiny::actionButton("calib", "Run model calibration"),
+          shiny::actionButton("calib",
+                              "RUN Calibration",
+                              width = "50%"),
+          shiny::radioButtons("save_plot",
+                              "Save plots ?",
+                              choices =
+                                list("Yes" = "Y",
+                                     "No" = "N"),
+                              selected = "Y"
+                              ),
           shiny::p(),
           shiny::wellPanel(
             shiny::fluidRow(shiny::strong("Diagnostic plot")),
