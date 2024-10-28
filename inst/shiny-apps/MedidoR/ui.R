@@ -261,11 +261,24 @@ ui <- shiny::fluidPage(
 
         shiny::tabPanel(
           "Image plot",
-          shiny::plotOutput("imagePlot", height = "600",
-                            click = "plot_click", brush = "crop"),
-          shiny::actionButton("cropBtn", "CROP", width = "33%"),
-          shiny::actionButton("saveBtn", "ADD IN", width = "33%"),
-          shiny::actionButton("clearBtn", "Clear Measurements", width = "33%")
+          fluidRow(
+            shiny::plotOutput("imagePlot", height = "600",
+                              click = "plot_click",
+                              brush = brushOpts(
+                                id = "plot_brush",
+                                resetOnNew = T,
+                                opacity = 0.45,
+                                clip = T
+                              )
+            )
+          ),
+          shiny::actionButton("crop", "CROP",
+                              width = "33%"),
+          shiny::actionButton("saveBtn", "ADD IN",
+                              width = "33%"),
+          shiny::actionButton("clearBtn",
+                              "Clear Measurements",
+                              width = "33%")
         ),
 
         shiny::tabPanel(

@@ -20,9 +20,11 @@ wd <- getwd()
 
 # Define the server
 server <- function(input, output, session) {
-  # Initialize the measurements data frame
-  measured_animals <- shiny::reactiveValues(length_measurement = data.frame(),
-                                            width_measurements = data.frame(),
+
+  # Reactive values
+  measured_animals <- shiny::reactiveValues(
+    length_measurement = data.frame(),
+    width_measurements = data.frame(),
   )
 
   newdata_10 <- shiny::reactiveValues(
@@ -77,6 +79,9 @@ server <- function(input, output, session) {
 
   cur_dir <- shiny::reactiveVal(value = as.character())
   user_dir <- shiny::reactiveVal(value = as.character())
+
+  img1 <- shiny::reactiveVal()
+  ranges <- shiny::reactiveValues(x = NULL, y = NULL)
 
   #################################
   # Setting the working directory #
@@ -233,8 +238,8 @@ server <- function(input, output, session) {
 
         cur_dir(paste(user_dir(), "/05%_interval", sep = ""))
 
-        p05 <- paste(cur_dir(), "/05%_interval/Measurements_05.xlsx", sep = "")
-        p05.1 <- paste(cur_dir(), "/05%_interval/Measurements_05_1.xlsx", sep = "")
+        p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
+        p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx", sep = "")
 
         shiny::showModal(
           shiny::modalDialog(
@@ -270,167 +275,168 @@ server <- function(input, output, session) {
   #########################
 
   shiny::observeEvent(input$file, {
-    # Store the image name
-    newdata_10$ID = input$ImageID
-    newdata_05$ID = input$ImageID
-
     shiny::req(input$file)
 
     if (!is.null(input$file) && !is.null(input$file$datapath)) {
-      img1 <- imager::load.image(input$file$datapath) %>%
-        imager::grabRect(output = "im")
+
+      im <- imager::load.image(input$file$datapath)
+      img1(im)
     }
-
-    output$imagePlot <- shiny::renderPlot({
-      img1 %>%
-        graphics::plot(x = img1, main = input$file$name)
-
-      # Add red dots for length points
-      if (!is.null(measured_animals$length_measurement) &&
-          nrow(measured_animals$length_measurement <= 3)) {
-        graphics::points(
-          measured_animals$length_measurement$Length_X,
-          measured_animals$length_measurement$Length_Y,
-          col = "red",
-          cex = 1.5
-        )
-      }
-
-      # Connect length points and draw the line passing through the 3 points
-      if (nrow(measured_animals$length_measurement) == 3 &&
-          input$segments == 1) {
-        x <- measured_animals$length_measurement$Length_X
-        y <- measured_animals$length_measurement$Length_Y
-
-        # Draw the line passing through the 3 points
-        graphics::segments(x[1], y[1], x[2], y[2], col = "red")
-        graphics::segments(x[2], y[2], x[3], y[3], col = "red")
-
-        # Calculate the perpendicular direction
-        dx <- x[3] - x[1]
-        dy <- y[3] - y[1]
-        perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
-
-        # Calculate the length as the sum of distances between the points
-        length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
-
-        # Draw parallel lines at 10% intervals
-        for (i in 1:9) {
-          length_fraction <- i / 10
-          x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
-          y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
-          line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
-
-          # Calculate the coordinates of the parallel lines
-          x1 <- x_parallel - line_length * perpendicular_direction[1]
-          y1 <- y_parallel - line_length * perpendicular_direction[2]
-          x2 <- x_parallel + line_length * perpendicular_direction[1]
-          y2 <- y_parallel + line_length * perpendicular_direction[2]
-
-          graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
-        }
-
-        # Add yellow dots for width measurements
-        if (!is.null(measured_animals$width_measurements)
-            && nrow(measured_animals$length_measurement == 3)) {
-          graphics::points(
-            measured_animals$width_measurements$Width_X,
-            measured_animals$width_measurements$Width_Y,
-            col = "yellow",
-            pch = 4,
-            cex = 2
-          )
-        }
-
-        if (input$segments == 1 &&
-            nrow(measured_animals$width_measurements == 21)) {
-          x <- measured_animals$width_measurements$Width_X
-          y <- measured_animals$width_measurements$Width_Y
-
-          # Draw the line passing through fluke width
-          graphics::segments(x[20], y[20], x[21], y[21], col = "green")
-        }
-      }
-      # Connect length points and draw the line passing through the 3 points
-      if (nrow(measured_animals$length_measurement) == 3 &&
-          input$segments == 2) {
-        x <- measured_animals$length_measurement$Length_X
-        y <- measured_animals$length_measurement$Length_Y
-
-        # Draw the line passing through the 3 points
-        graphics::segments(x[1], y[1], x[2], y[2], col = "red")
-        graphics::segments(x[2], y[2], x[3], y[3], col = "red")
-
-        # Calculate the perpendicular direction
-        dx <- x[3] - x[1]
-        dy <- y[3] - y[1]
-        perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
-
-        # Calculate the length as the sum of distances between the points
-        length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
-
-        # Draw parallel lines at 10% intervals
-        for (i in 1:19) {
-          length_fraction <- i / 20
-          x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
-          y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
-          line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
-
-          # Calculate the coordinates of the parallel lines
-          x1 <- x_parallel - line_length * perpendicular_direction[1]
-          y1 <- y_parallel - line_length * perpendicular_direction[2]
-          x2 <- x_parallel + line_length * perpendicular_direction[1]
-          y2 <- y_parallel + line_length * perpendicular_direction[2]
-
-          graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
-        }
-
-        # Add yellow dots for width measurements
-        if (!is.null(measured_animals$width_measurements)
-            && nrow(measured_animals$length_measurement == 3)) {
-          graphics::points(
-            measured_animals$width_measurements$Width_X,
-            measured_animals$width_measurements$Width_Y,
-            col = "yellow",
-            pch = 4,
-            cex = 2
-          )
-        }
-
-        if (input$segments == 2 &&
-            nrow(measured_animals$width_measurements == 41)) {
-          x <- measured_animals$width_measurements$Width_X
-          y <- measured_animals$width_measurements$Width_Y
-
-          # Draw the line passing through fluke width
-          graphics::segments(x[40], y[40], x[41], y[41], col = "green")
-
-        }
-      }
-    })
   })
 
-  # shiny::observeEvent(input$crop, {
-  #
-  #   if (!is.null(input$file) && !is.null(input$file$datapath)) {
-  #     img1 <- imager::load.image(input$file$datapath) %>%
-  #       imager::grabRect(output = "im")
-  #   }
-  #
-  #   output$output2 = shiny::renderImage({
-  #     bbox <- c(input$crop$xmin = {input$crop$xmin}
-  #               input$crop$ymin = {input$crop$ymin}
-  #               input$crop$xmax = {input$crop$xmax}
-  #               input$crop$ymax = {input$crop$ymax}
-  #     )
-  #   })
-  # })
+  brush <- reactiveVal()
+
+  output$imagePlot <- renderPlot({
+    shiny::req(input$file)
+    if (!is.null(ranges$x) && !is.null(ranges$y)) {
+      plot(img1(), xlim = ranges$x, ylim = ranges$y, main = input$file$name)
+    } else {
+      plot(img1(), main = input$file$name)
+    }
+  })
+
+  shiny::observeEvent(input$crop, {
+    shiny::req(input$file)
+    brush <- input$plot_brush
+    if (!is.null(brush)) {
+      ranges$x <- c(brush$xmin, brush$xmax)
+      ranges$y <- c(brush$ymin, brush$ymax)
+
+    } else {
+      ranges$x <- NULL
+      ranges$y <- NULL
+    }
+  })
 
   #########################################
   # Capture length and width measurements #
   #########################################
 
   shiny::observeEvent(input$plot_click, {
+
+    # Add red dots for length points
+    if (!is.null(measured_animals$length_measurement) &&
+        nrow(measured_animals$length_measurement <= 3)) {
+      graphics::points(
+        measured_animals$length_measurement$Length_X,
+        measured_animals$length_measurement$Length_Y,
+        col = "red",
+        cex = 1.5
+      )
+    }
+
+    # Connect length points and draw the line passing through the 3 points
+    if (nrow(measured_animals$length_measurement) == 3 &&
+        input$segments == 1) {
+      x <- measured_animals$length_measurement$Length_X
+      y <- measured_animals$length_measurement$Length_Y
+
+      # Draw the line passing through the 3 points
+      graphics::segments(x[1], y[1], x[2], y[2], col = "red")
+      graphics::segments(x[2], y[2], x[3], y[3], col = "red")
+
+      # Calculate the perpendicular direction
+      dx <- x[3] - x[1]
+      dy <- y[3] - y[1]
+      perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
+
+      # Calculate the length as the sum of distances between the points
+      length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
+
+      # Draw parallel lines at 10% intervals
+      for (i in 1:9) {
+        length_fraction <- i / 10
+        x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
+        y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
+        line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
+
+        # Calculate the coordinates of the parallel lines
+        x1 <- x_parallel - line_length * perpendicular_direction[1]
+        y1 <- y_parallel - line_length * perpendicular_direction[2]
+        x2 <- x_parallel + line_length * perpendicular_direction[1]
+        y2 <- y_parallel + line_length * perpendicular_direction[2]
+
+        graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
+      }
+
+      # Add yellow dots for width measurements
+      if (!is.null(measured_animals$width_measurements)
+          && nrow(measured_animals$length_measurement == 3)) {
+        graphics::points(
+          measured_animals$width_measurements$Width_X,
+          measured_animals$width_measurements$Width_Y,
+          col = "yellow",
+          pch = 4,
+          cex = 2
+        )
+      }
+
+      if (input$segments == 1 &&
+          nrow(measured_animals$width_measurements == 21)) {
+        x <- measured_animals$width_measurements$Width_X
+        y <- measured_animals$width_measurements$Width_Y
+
+        # Draw the line passing through fluke width
+        graphics::segments(x[20], y[20], x[21], y[21],
+                           col = "green")
+      }
+    }
+    # Connect length points and draw the line passing through the 3 points
+    if (nrow(measured_animals$length_measurement) == 3 &&
+        input$segments == 2) {
+      x <- measured_animals$length_measurement$Length_X
+      y <- measured_animals$length_measurement$Length_Y
+
+      # Draw the line passing through the 3 points
+      graphics::segments(x[1], y[1], x[2], y[2], col = "red")
+      graphics::segments(x[2], y[2], x[3], y[3], col = "red")
+
+      # Calculate the perpendicular direction
+      dx <- x[3] - x[1]
+      dy <- y[3] - y[1]
+      perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
+
+      # Calculate the length as the sum of distances between the points
+      length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
+
+      # Draw parallel lines at 10% intervals
+      for (i in 1:19) {
+        length_fraction <- i / 20
+        x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
+        y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
+        line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
+
+        # Calculate the coordinates of the parallel lines
+        x1 <- x_parallel - line_length * perpendicular_direction[1]
+        y1 <- y_parallel - line_length * perpendicular_direction[2]
+        x2 <- x_parallel + line_length * perpendicular_direction[1]
+        y2 <- y_parallel + line_length * perpendicular_direction[2]
+
+        graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
+      }
+
+      # Add yellow dots for width measurements
+      if (!is.null(measured_animals$width_measurements)
+          && nrow(measured_animals$length_measurement == 3)) {
+        graphics::points(
+          measured_animals$width_measurements$Width_X,
+          measured_animals$width_measurements$Width_Y,
+          col = "yellow",
+          pch = 4,
+          cex = 2
+        )
+      }
+
+      if (input$segments == 2 &&
+          nrow(measured_animals$width_measurements == 41)) {
+        x <- measured_animals$width_measurements$Width_X
+        y <- measured_animals$width_measurements$Width_Y
+
+        # Draw the line passing through fluke width
+        graphics::segments(x[40], y[40], x[41], y[41], col = "green")
+
+      }
+    }
     ##########################
     # Calculating plot cords #
     ##########################
@@ -522,6 +528,7 @@ server <- function(input, output, session) {
           width_measurements <- stats::na.omit(distances)
 
           # Store user input
+          newdata_10$ID = input$ImageID
           newdata_10$F_Alt = input$alt
           newdata_10$TO_Alt = input$takeof
           newdata_10$Date = input$Date
@@ -600,6 +607,7 @@ server <- function(input, output, session) {
           width_measurements <- stats::na.omit(distances)
 
           # Store user input
+          newdata_05$ID = input$ImageID
           newdata_05$F_Alt = input$alt
           newdata_05$TO_Alt = input$takeof
           newdata_05$Date = input$Date
@@ -1004,15 +1012,13 @@ server <- function(input, output, session) {
 
       ggplot2::ggsave(filename = "Regression_plot.png",
                       plot = p1,
-                      path = cur_dir(),
-                      width = 720, height = 480,
-                      units = "px")
+                      path = cur_dir()
+                      )
 
       ggplot2::ggsave(filename = "Variance_plot.png",
                       plot = p3,
-                      path = cur_dir(),
-                      width = 720, height = 480,
-                      units = "px")
+                      path = cur_dir()
+                      )
     }
 
     file <- ifelse(input$segments == 1,
