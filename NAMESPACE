@@ -2,7 +2,6 @@
 
 export("%>%")
 export(calib)
-export(create_data)
 export(import_data)
 export(medidor)
 importFrom(dplyr,arrange)
