@@ -1,15 +1,3 @@
-#' @importFrom caret trainControl train
-#' @importFrom DT renderDataTable datatable
-#' @importFrom ggplot2 ggplot aes geom_point geom_smooth theme_classic position_dodge stat_summary ylab xlab ggtitle geom_hline scale_linetype_manual guide_legend theme element_text geom_col theme_bw
-#' @importFrom graphics plot points segments
-#' @importFrom htmltools tagList
-#' @importFrom imager load.image grabRect
-#' @importFrom performance check_model
-#' @importFrom readxl read_xlsx read_excel
-#' @importFrom shiny reactiveValues observeEvent showModal modalDialog textInput actionButton modalButton reactiveVal removeModal req renderPlot reactiveFileReader updateTextInput updateRadioButtons updateNumericInput stopApp
-#' @importFrom shinycssloaders showSpinner
-#' @importFrom stats na.omit lm predict
-#' @importFrom writexl write_xlsx
 ####
 # Functions
 ####
@@ -733,7 +721,7 @@ server <- function(input, output, session) {
       )
 
       shinycssloaders::showSpinner("mTable", {
-        slow_function()
+        Sys.sleep(2)
       })
 
       # Display measurements table
@@ -811,13 +799,12 @@ server <- function(input, output, session) {
       )
 
       shinycssloaders::showSpinner("mTable", {
-        slow_function()
+        Sys.sleep(2)
       })
 
       # Display measurements table
       output$mTable <- DT::renderDataTable({
         DT::datatable(dtfilter(measurements))
-
       })
     }
   })
@@ -840,7 +827,6 @@ server <- function(input, output, session) {
                               disabled = F)
     ranges$x <- NULL
     ranges$y <- NULL
-
   })
 
   ###########################################
