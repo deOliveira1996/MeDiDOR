@@ -1,62 +1,23 @@
 #' @title Used to open the MedidoR API
-#' Opens a Shiny application developed to conduct aerial photogrammetry analysis. MedidoR allows you to extract and convert pixel measurements from aerial images collected of marine animals.
+#' @description Opens a Shiny application developed to conduct aerial photogrammetry analysis. MedidoR allows you to extract and convert pixel measurements from aerial images collected of marine animals.
 #' @importFrom shiny runApp
+#' @importFrom caret trainControl train
+#' @importFrom DT renderDataTable datatable
+#' @importFrom ggplot2 ggplot aes geom_point geom_smooth theme_classic position_dodge stat_summary ylab xlab ggtitle geom_hline scale_linetype_manual guide_legend theme element_text geom_col theme_bw
+#' @importFrom graphics plot points segments
+#' @importFrom htmltools tagList
+#' @importFrom performance check_model
+#' @importFrom readxl read_xlsx read_excel
+#' @importFrom shiny reactiveValues observeEvent showModal modalDialog textInput actionButton modalButton reactiveVal removeModal req renderPlot reactiveFileReader updateTextInput updateRadioButtons updateNumericInput stopApp
+#' @importFrom shinycssloaders showSpinner
+#' @importFrom stats na.omit lm predict
+#' @importFrom writexl write_xlsx
 #' @export
 
 medidor <- function() {
-  shiny::runApp(appDir = system.file("shiny-apps", "MedidoR", package = "MedidoR"))
-
-}
-
-#' @title Function to import the measurement spreadsheet (.xlsx)
-#' @param file Full path of the file (.xlsx)
-#' @importFrom dplyr as_tibble
-#' @importFrom readxl read_xlsx
-#' @export
-
-import_data <- function(file = "") {
-  readxl::read_xlsx(path = "", col_names = TRUE) %>%
-    dplyr::as_tibble()
-}
-
-#' @title dtfilter
-#' @importFrom tidyr gather
-#' @importFrom dplyr arrange
-#' @keywords internal
-#' @export
-
-dtfilter <- function(x) {
-  x <- x %>%
-    tidyr::gather(
-      key = "Segments",
-      value = "Pixel",
-      -c(
-        ID,
-        Frame_Score,
-        F_Alt,
-        TO_Alt,
-        C_Alt,
-        Measured_Date,
-        Species,
-        cGSD,
-        EstLength,
-        Obs,
-        Comments,
-        Drone,
-        Date
-      )
-    ) %>%
-    dplyr::arrange(by_group = ID)
-
-  return(x)
-} # Function to filter the data for the data.table output
-
-#' @title slow_function
-#' @keywords internal
-#' @export
-
-slow_function <- function() {
-  Sys.sleep(2)
+  shiny::runApp(
+    appDir = system.file("shiny-apps", "MedidoR",
+                         package = "MedidoR"))
 }
 
 #' @title Function to import the calib spreadsheet (.xlsx)
@@ -83,107 +44,13 @@ calib <- function(file = "") {
   return(mdata)
 } # Open the calibration data frame
 
-#' @title create_data
-#' @importFrom dplyr select
-#' @importFrom writexl write_xlsx
-#' @importFrom shiny showModal
-#' @importFrom shiny modalDialog
-#' @importFrom shiny modalButton
+#' @title Function to import the measurement spreadsheet (.xlsx)
+#' @param file Full path of the file (.xlsx)
+#' @importFrom dplyr as_tibble
+#' @importFrom readxl read_xlsx
 #' @export
 
-create_data <- function(segments = 2,
-                        path = NULL,
-                        path2 = NULL) {
-  if (segments == 1) {
-    df <- data.frame(
-      "Drone" = character(0),
-      "Obs" = character(0),
-      "Species" = character(0),
-      "Date" = character(0),
-      "Measured_Date" = character(0),
-      "ID" = character(0),
-      "Frame_Score" = character(0),
-      "F_Alt" = numeric(0),
-      "TO_Alt" = numeric(0),
-      "C_Alt" = numeric(0),
-      "BL" = numeric(0),
-      "WD_10" = numeric(0),
-      "WD_20" = numeric(0),
-      "WD_30" = numeric(0),
-      "WD_40" = numeric(0),
-      "WD_50" = numeric(0),
-      "WD_60" = numeric(0),
-      "WD_70" = numeric(0),
-      "WD_80" = numeric(0),
-      "WD_90" = numeric(0),
-      "WD_F" = numeric(0),
-      "cGSD" = numeric(0),
-      "EstLength" = numeric(0),
-      "Comments" = character(0)
-    )
-
-    writexl::write_xlsx(df, path = path)
-    writexl::write_xlsx(path = path2, dtfilter(df))
-
-    shiny::showModal(
-      shiny::modalDialog(
-        title = "Dataframe created",
-        "Done",
-        footer = shiny::modalButton("OK"),
-        easyClose = TRUE
-      )
-    )
-  }
-
-  if (segments == 2) {
-    df <- data.frame(
-      "Drone" = character(0),
-      "Obs" = character(0),
-      "Species" = character(0),
-      "Date" = character(0),
-      "Measured_Date" = character(0),
-      "ID" = character(0),
-      "Frame_Score" = character(0),
-      "F_Alt" = numeric(0),
-      "TO_Alt" = numeric(0),
-      "C_Alt" = numeric(0),
-      "BL" = numeric(0),
-      "WD_05" = numeric(0),
-      "WD_10" = numeric(0),
-      "WD_15" = numeric(0),
-      "WD_20" = numeric(0),
-      "WD_25" = numeric(0),
-      "WD_30" = numeric(0),
-      "WD_35" = numeric(0),
-      "WD_40" = numeric(0),
-      "WD_45" = numeric(0),
-      "WD_50" = numeric(0),
-      "WD_55" = numeric(0),
-      "WD_60" = numeric(0),
-      "WD_65" = numeric(0),
-      "WD_70" = numeric(0),
-      "WD_75" = numeric(0),
-      "WD_80" = numeric(0),
-      "WD_85" = numeric(0),
-      "WD_90" = numeric(0),
-      "WD_95" = numeric(0),
-      "WD_F" = numeric(0),
-      "cGSD" = numeric(0),
-      "EstLength" = numeric(0),
-      "Comments" = character(0)
-    )
-
-    writexl::write_xlsx(df, path)
-    writexl::write_xlsx(path = path2, dtfilter(df))
-
-    shiny::showModal(
-      shiny::modalDialog(
-        title = "Dataframe created",
-        "Done",
-        footer = shiny::modalButton("OK"),
-        easyClose = TRUE
-      )
-    )
-  }
-  return(df)
-} # create data frame
+import_data <- function(file = "") {
+  readxl::read_xlsx(path = "", col_names = TRUE) %>%
+    dplyr::as_tibble()
+}
