@@ -2,10 +2,13 @@
 % Please edit documentation in R/medidor.R
 \name{import_data}
 \alias{import_data}
-\title{import_data}
+\title{Function to import the measurement spreadsheet (.xlsx)}
 \usage{
 import_data(file = "")
 }
+\arguments{
+\item{file}{Full path of the file (.xlsx)}
+}
 \description{
-import_data
+Function to import the measurement spreadsheet (.xlsx)
 }

@@ -81,7 +81,8 @@ server <- function(input, output, session) {
   user_dir <- shiny::reactiveVal(value = as.character())
 
   img1 <- shiny::reactiveVal()
-  ranges <- shiny::reactiveValues(x = NULL, y = NULL)
+  ranges <- shiny::reactiveValues()
+  brush <- shiny::reactiveVal()
 
   #################################
   # Setting the working directory #
@@ -118,10 +119,12 @@ server <- function(input, output, session) {
 
       dir.create("./10%_interval")
 
-      cur_dir(paste(user_dir(), "/10%_interval", sep = ""))
-
-      p10 <- paste(cur_dir(), "/Measurements_10.xlsx", sep = "")
-      p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx", sep = "")
+      cur_dir(paste(user_dir(), "/10%_interval",
+                    sep = ""))
+      p10 <- paste(cur_dir(), "/Measurements_10.xlsx",
+                   sep = "")
+      p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx",
+                     sep = "")
 
       measurements <- create_data(segments = 1,
                                   path = p10,
@@ -157,10 +160,12 @@ server <- function(input, output, session) {
 
       dir.create("./05%_interval")
 
-      cur_dir(paste(user_dir(), "/05%_interval", sep = ""))
-
-      p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
-      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx", sep = "")
+      cur_dir(paste(user_dir(), "/05%_interval",
+                    sep = ""))
+      p05 <- paste(cur_dir(), "/Measurements_05.xlsx",
+                   sep = "")
+      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx",
+                     sep = "")
 
       measurements <- create_data(segments = 2,
                                   path = p05,
@@ -198,75 +203,76 @@ server <- function(input, output, session) {
     data_in <- list("10%_interval", "05%_interval") %in%
       list.files()
 
-    if (input$segments == 1) {
-      if (data_in[1] == T) {
+    if (input$segments == 1 && data_in[1] == T) {
 
-        cur_dir(paste(user_dir(), "/10%_interval", sep = ""))
+      cur_dir(paste(user_dir(), "/10%_interval",
+                    sep = ""))
+      p10 <- paste(cur_dir(), "/Measurements_10.xlsx",
+                   sep = "")
+      p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx",
+                     sep = "")
 
-        p10 <- paste(cur_dir(), "/Measurements_10.xlsx", sep = "")
-        p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx", sep = "")
-
-        shiny::showModal(
-          shiny::modalDialog(
-            title = "Dataframe already exist in directory",
-            paste("Dataframe imported: 10% interval", sep = ""),
-            footer = shiny::modalButton("OK"),
-            easyClose = TRUE
-          )
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Dataframe already exist in directory",
+          paste("Dataframe imported: 10% interval",
+                sep = ""),
+          footer = shiny::modalButton("OK"),
+          easyClose = TRUE
         )
+      )
 
-        # Display measurements table
-        output$mTable <- DT::renderDataTable({
-          measurements <- readxl::read_xlsx(path = p10.1, col_names = T)
+      # Display measurements table
+      output$mTable <- DT::renderDataTable({
+        measurements <- readxl::read_xlsx(path = p10.1, col_names = T)
 
-          DT::datatable(measurements)
-        })
-      } else {
-        shiny::showModal(
-          shiny::modalDialog(
-            title = "Dataframe not exist in directory",
-            paste("Create a 10% interval dataframe before", sep = ""),
-            footer = shiny::modalButton("OK"),
-            easyClose = TRUE
-          )
+        DT::datatable(measurements)
+      })
+    } else {
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Dataframe not exist in directory",
+          paste("Create a 10% interval dataframe before", sep = ""),
+          footer = shiny::modalButton("OK"),
+          easyClose = TRUE
         )
-      }
+      )
     }
 
-    if (input$segments == 2) {
-      if (data_in[2] == T) {
+    if (input$segments == 2 && data_in[2] == T) {
 
-        cur_dir(paste(user_dir(), "/05%_interval", sep = ""))
+      cur_dir(paste(user_dir(), "/05%_interval",
+                    sep = ""))
+      p05 <- paste(cur_dir(), "/Measurements_05.xlsx",
+                   sep = "")
+      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx",
+                     sep = "")
 
-        p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
-        p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx", sep = "")
-
-        shiny::showModal(
-          shiny::modalDialog(
-            title = "Dataframe already exist in directory",
-            paste("Dataframe imported: 5% interval", sep = ""),
-            footer = shiny::modalButton("OK"),
-            easyClose = TRUE
-          )
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Dataframe already exist in directory",
+          paste("Dataframe imported: 5% interval", sep = ""),
+          footer = shiny::modalButton("OK"),
+          easyClose = TRUE
         )
+      )
 
-        # Display measurements table
+      # Display measurements table
 
-        output$mTable <- DT::renderDataTable({
-          measurements <- readxl::read_xlsx(path = p05.1, col_names = T)
+      output$mTable <- DT::renderDataTable({
+        measurements <- readxl::read_xlsx(path = p05.1, col_names = T)
 
-          DT::datatable(measurements)
-        })
-      } else {
-        shiny::showModal(
-          shiny::modalDialog(
-            title = "Dataframe not exist in directory",
-            paste("Create a 5% interval dataframe before", sep = ""),
-            footer = shiny::modalButton("OK"),
-            easyClose = TRUE
-          )
+        DT::datatable(measurements)
+      })
+    } else {
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Dataframe not exist in directory",
+          paste("Create a 5% interval dataframe before", sep = ""),
+          footer = shiny::modalButton("OK"),
+          easyClose = TRUE
         )
-      }
+      )
     }
   })
 
@@ -284,20 +290,148 @@ server <- function(input, output, session) {
     }
   })
 
-  brush <- reactiveVal()
-
   output$imagePlot <- renderPlot({
     shiny::req(input$file)
+
     if (!is.null(ranges$x) && !is.null(ranges$y)) {
-      plot(img1(), xlim = ranges$x, ylim = ranges$y, main = input$file$name)
+      graphics::plot(img1(),
+           xlim = ranges$x,
+           ylim = ranges$y,
+           main = input$file$name)
+      # Add red dots for length points
+      if (!is.null(measured_animals$length_measurement) &&
+          nrow(measured_animals$length_measurement <= 3)) {
+        graphics::points(
+          measured_animals$length_measurement$Length_X,
+          measured_animals$length_measurement$Length_Y,
+          col = "red",
+          cex = 1.5
+        )
+      }
+
+      # Connect length points and draw the line passing through the 3 points
+      if (nrow(measured_animals$length_measurement) == 3 &&
+          input$segments == 1) {
+        x <- measured_animals$length_measurement$Length_X
+        y <- measured_animals$length_measurement$Length_Y
+
+        # Draw the line passing through the 3 points
+        graphics::segments(x[1], y[1], x[2], y[2], col = "red")
+        graphics::segments(x[2], y[2], x[3], y[3], col = "red")
+
+        # Calculate the perpendicular direction
+        dx <- x[3] - x[1]
+        dy <- y[3] - y[1]
+        perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
+
+        # Calculate the length as the sum of distances between the points
+        length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
+
+        # Draw parallel lines at 10% intervals
+        for (i in 1:9) {
+          length_fraction <- i / 10
+          x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
+          y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
+          line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
+
+          # Calculate the coordinates of the parallel lines
+          x1 <- x_parallel - line_length * perpendicular_direction[1]
+          y1 <- y_parallel - line_length * perpendicular_direction[2]
+          x2 <- x_parallel + line_length * perpendicular_direction[1]
+          y2 <- y_parallel + line_length * perpendicular_direction[2]
+
+          graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
+        }
+
+        # Add yellow dots for width measurements
+        if (!is.null(measured_animals$width_measurements)
+            && nrow(measured_animals$length_measurement == 3)) {
+          graphics::points(
+            measured_animals$width_measurements$Width_X,
+            measured_animals$width_measurements$Width_Y,
+            col = "yellow",
+            pch = 4,
+            cex = 2
+          )
+        }
+
+        if (input$segments == 1 &&
+            nrow(measured_animals$width_measurements == 21)) {
+          x <- measured_animals$width_measurements$Width_X
+          y <- measured_animals$width_measurements$Width_Y
+
+          # Draw the line passing through fluke width
+          graphics::segments(x[20], y[20], x[21], y[21],
+                             col = "green")
+        }
+      }
+      # Connect length points and draw the line passing through the 3 points
+      if (nrow(measured_animals$length_measurement) == 3 &&
+          input$segments == 2) {
+        x <- measured_animals$length_measurement$Length_X
+        y <- measured_animals$length_measurement$Length_Y
+
+        # Draw the line passing through the 3 points
+        graphics::segments(x[1], y[1], x[2], y[2], col = "red")
+        graphics::segments(x[2], y[2], x[3], y[3], col = "red")
+
+        # Calculate the perpendicular direction
+        dx <- x[3] - x[1]
+        dy <- y[3] - y[1]
+        perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
+
+        # Calculate the length as the sum of distances between the points
+        length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
+
+        # Draw parallel lines at 10% intervals
+        for (i in 1:19) {
+          length_fraction <- i / 20
+          x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
+          y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
+          line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
+
+          # Calculate the coordinates of the parallel lines
+          x1 <- x_parallel - line_length * perpendicular_direction[1]
+          y1 <- y_parallel - line_length * perpendicular_direction[2]
+          x2 <- x_parallel + line_length * perpendicular_direction[1]
+          y2 <- y_parallel + line_length * perpendicular_direction[2]
+
+          graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
+        }
+
+        # Add yellow dots for width measurements
+        if (!is.null(measured_animals$width_measurements)
+            && nrow(measured_animals$length_measurement == 3)) {
+          graphics::points(
+            measured_animals$width_measurements$Width_X,
+            measured_animals$width_measurements$Width_Y,
+            col = "yellow",
+            pch = 4,
+            cex = 2
+          )
+        }
+
+        if (input$segments == 2 &&
+            nrow(measured_animals$width_measurements == 41)) {
+          x <- measured_animals$width_measurements$Width_X
+          y <- measured_animals$width_measurements$Width_Y
+
+          # Draw the line passing through fluke width
+          graphics::segments(x[40], y[40], x[41], y[41], col = "green")
+
+        }
+      }
+
     } else {
-      plot(img1(), main = input$file$name)
+      graphics::plot(img1(), main = input$file$name)
     }
   })
 
   shiny::observeEvent(input$crop, {
     shiny::req(input$file)
     brush <- input$plot_brush
+    shiny::updateActionButton(inputId = "crop",
+                              disabled = T)
     if (!is.null(brush)) {
       ranges$x <- c(brush$xmin, brush$xmax)
       ranges$y <- c(brush$ymin, brush$ymax)
@@ -313,136 +447,13 @@ server <- function(input, output, session) {
   #########################################
 
   shiny::observeEvent(input$plot_click, {
-
-    # Add red dots for length points
-    if (!is.null(measured_animals$length_measurement) &&
-        nrow(measured_animals$length_measurement <= 3)) {
-      graphics::points(
-        measured_animals$length_measurement$Length_X,
-        measured_animals$length_measurement$Length_Y,
-        col = "red",
-        cex = 1.5
-      )
-    }
-
-    # Connect length points and draw the line passing through the 3 points
-    if (nrow(measured_animals$length_measurement) == 3 &&
-        input$segments == 1) {
-      x <- measured_animals$length_measurement$Length_X
-      y <- measured_animals$length_measurement$Length_Y
-
-      # Draw the line passing through the 3 points
-      graphics::segments(x[1], y[1], x[2], y[2], col = "red")
-      graphics::segments(x[2], y[2], x[3], y[3], col = "red")
-
-      # Calculate the perpendicular direction
-      dx <- x[3] - x[1]
-      dy <- y[3] - y[1]
-      perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
-
-      # Calculate the length as the sum of distances between the points
-      length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
-
-      # Draw parallel lines at 10% intervals
-      for (i in 1:9) {
-        length_fraction <- i / 10
-        x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
-        y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
-        line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
-
-        # Calculate the coordinates of the parallel lines
-        x1 <- x_parallel - line_length * perpendicular_direction[1]
-        y1 <- y_parallel - line_length * perpendicular_direction[2]
-        x2 <- x_parallel + line_length * perpendicular_direction[1]
-        y2 <- y_parallel + line_length * perpendicular_direction[2]
-
-        graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
-      }
-
-      # Add yellow dots for width measurements
-      if (!is.null(measured_animals$width_measurements)
-          && nrow(measured_animals$length_measurement == 3)) {
-        graphics::points(
-          measured_animals$width_measurements$Width_X,
-          measured_animals$width_measurements$Width_Y,
-          col = "yellow",
-          pch = 4,
-          cex = 2
-        )
-      }
-
-      if (input$segments == 1 &&
-          nrow(measured_animals$width_measurements == 21)) {
-        x <- measured_animals$width_measurements$Width_X
-        y <- measured_animals$width_measurements$Width_Y
-
-        # Draw the line passing through fluke width
-        graphics::segments(x[20], y[20], x[21], y[21],
-                           col = "green")
-      }
-    }
-    # Connect length points and draw the line passing through the 3 points
-    if (nrow(measured_animals$length_measurement) == 3 &&
-        input$segments == 2) {
-      x <- measured_animals$length_measurement$Length_X
-      y <- measured_animals$length_measurement$Length_Y
-
-      # Draw the line passing through the 3 points
-      graphics::segments(x[1], y[1], x[2], y[2], col = "red")
-      graphics::segments(x[2], y[2], x[3], y[3], col = "red")
-
-      # Calculate the perpendicular direction
-      dx <- x[3] - x[1]
-      dy <- y[3] - y[1]
-      perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
-
-      # Calculate the length as the sum of distances between the points
-      length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
-
-      # Draw parallel lines at 10% intervals
-      for (i in 1:19) {
-        length_fraction <- i / 20
-        x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
-        y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
-        line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
-
-        # Calculate the coordinates of the parallel lines
-        x1 <- x_parallel - line_length * perpendicular_direction[1]
-        y1 <- y_parallel - line_length * perpendicular_direction[2]
-        x2 <- x_parallel + line_length * perpendicular_direction[1]
-        y2 <- y_parallel + line_length * perpendicular_direction[2]
-
-        graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
-      }
-
-      # Add yellow dots for width measurements
-      if (!is.null(measured_animals$width_measurements)
-          && nrow(measured_animals$length_measurement == 3)) {
-        graphics::points(
-          measured_animals$width_measurements$Width_X,
-          measured_animals$width_measurements$Width_Y,
-          col = "yellow",
-          pch = 4,
-          cex = 2
-        )
-      }
-
-      if (input$segments == 2 &&
-          nrow(measured_animals$width_measurements == 41)) {
-        x <- measured_animals$width_measurements$Width_X
-        y <- measured_animals$width_measurements$Width_Y
-
-        # Draw the line passing through fluke width
-        graphics::segments(x[40], y[40], x[41], y[41], col = "green")
-
-      }
-    }
     ##########################
     # Calculating plot cords #
     ##########################
 
     if (!is.null(input$file) &&
-        nrow(measured_animals$length_measurement) < 3) {
+        nrow(measured_animals$length_measurement) < 3 &&
+        input$crop == T) {
       x <- input$plot_click$x
       y <- input$plot_click$y
 
@@ -661,6 +672,9 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$saveBtn, {
+    shiny::updateActionButton(inputId = "saveBtn",
+                              disabled = T)
+
     if (input$segments == 1) {
       nd <- data.frame(
         "Drone" = input$drone,
@@ -812,10 +826,20 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$clearBtn, {
     measured_animals$length_measurement <- data.frame()
     measured_animals$width_measurements <- data.frame()
-    shiny::updateTextInput(inputId = "comments", value = "")
-    shiny::updateTextInput(ImageId = "ImageId", value = "")
-    shiny::updateRadioButtons(inputId = "score", selected = 4)
-    shiny::updateNumericInput(inputId = "alt", value = 20)
+    shiny::updateTextInput(inputId = "comments",
+                           value = "")
+    shiny::updateTextInput(inputId = "ImageId",
+                           value = "")
+    shiny::updateRadioButtons(inputId = "score",
+                              selected = 4)
+    shiny::updateNumericInput(inputId = "alt",
+                              value = 20)
+    shiny::updateActionButton(inputId = "crop",
+                              disabled = F)
+    shiny::updateActionButton(inputId = "saveBtn",
+                              disabled = F)
+    ranges$x <- NULL
+    ranges$y <- NULL
 
   })
 

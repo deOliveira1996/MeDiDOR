@@ -8,7 +8,9 @@ ui <- shiny::fluidPage(
       shiny::wellPanel(
         shiny::fluidRow(shiny::strong("Input Data")),
         width = 2,
-        shiny::actionButton("path", "Change working directory", width = "100%"),
+        shiny::actionButton("path",
+                            "Change working directory",
+                            width = "100%"),
         shiny::fileInput(
           "file",
           "Select an image file",
@@ -23,8 +25,14 @@ ui <- shiny::fluidPage(
           selected = 2
         ),
         shiny::fluidRow(
-          column(width = 6, actionButton("create", "CREATE", width = "100%")),
-          column(width = 6, actionButton("import", "IMPORT", width = "100%")),
+          column(width = 6,
+                 actionButton("create",
+                              "CREATE",
+                              width = "100%")),
+          column(width = 6,
+                 actionButton("import",
+                              "IMPORT",
+                              width = "100%")),
           shiny::helpText("The", strong("CREATE"), "button creates a data frame
                         (for measurements every 5% or 10% of the body length)"),
           shiny::helpText("The", strong("IMPORT"), "button imports a data frame
@@ -262,14 +270,17 @@ ui <- shiny::fluidPage(
         shiny::tabPanel(
           "Image plot",
           fluidRow(
-            shiny::plotOutput("imagePlot", height = "600",
-                              click = "plot_click",
-                              brush = brushOpts(
-                                id = "plot_brush",
-                                resetOnNew = T,
-                                opacity = 0.45,
-                                clip = T
-                              )
+            shiny::plotOutput(
+              "imagePlot",
+              height = "720",
+              width = "1080",
+              click = "plot_click",
+              brush = brushOpts(
+                id = "plot_brush",
+                resetOnNew = T,
+                opacity = 0.1,
+                clip = T
+              )
             )
           ),
           shiny::actionButton("crop", "CROP",
@@ -277,7 +288,7 @@ ui <- shiny::fluidPage(
           shiny::actionButton("saveBtn", "ADD IN",
                               width = "33%"),
           shiny::actionButton("clearBtn",
-                              "Clear Measurements",
+                              "CLEAR",
                               width = "33%")
         ),
 

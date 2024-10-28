@@ -1,4 +1,5 @@
-#' @title medidor
+#' @title Used to open the MedidoR API
+#' Opens a Shiny application developed to conduct aerial photogrammetry analysis. MedidoR allows you to extract and convert pixel measurements from aerial images collected of marine animals.
 #' @importFrom shiny runApp
 #' @export
 
@@ -7,7 +8,8 @@ medidor <- function() {
 
 }
 
-#' @title import_data
+#' @title Function to import the measurement spreadsheet (.xlsx)
+#' @param file Full path of the file (.xlsx)
 #' @importFrom dplyr as_tibble
 #' @importFrom readxl read_xlsx
 #' @export
@@ -15,13 +17,13 @@ medidor <- function() {
 import_data <- function(file = "") {
   readxl::read_xlsx(path = "", col_names = TRUE) %>%
     dplyr::as_tibble()
-
 }
 
 #' @title dtfilter
 #' @importFrom tidyr gather
 #' @importFrom dplyr arrange
 #' @keywords internal
+#' @export
 
 dtfilter <- function(x) {
   x <- x %>%
@@ -51,19 +53,22 @@ dtfilter <- function(x) {
 
 #' @title slow_function
 #' @keywords internal
+#' @export
 
 slow_function <- function() {
   Sys.sleep(2)
 }
 
-#' @title calib
+#' @title Function to import the calib spreadsheet (.xlsx)
+#' @param file Full path of the file (.xlsx)
 #' @importFrom readxl read_excel
 #' @importFrom dplyr select
 #' @export
 
-calib <- function(x) {
-  mdata <- readxl::read_excel(path = x, col_names = T) %>%
-    dplyr::select(c("Date", "Pixel", "ObjLength", "GPSAlt", "TO_Alt"))
+calib <- function(file = "") {
+  mdata <- readxl::read_excel(path = file, col_names = T) %>%
+    dplyr::select(c("Date", "Pixel", "ObjLength",
+                    "GPSAlt", "TO_Alt"))
 
   mdata$Data <- as.factor(mdata$Date)
   mdata$Pixel <- as.numeric(mdata$Pixel)
@@ -180,7 +185,5 @@ create_data <- function(segments = 2,
       )
     )
   }
-
   return(df)
 } # create data frame
-

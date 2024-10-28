@@ -2,10 +2,13 @@
 % Please edit documentation in R/medidor.R
 \name{calib}
 \alias{calib}
-\title{calib}
+\title{Function to import the calib spreadsheet (.xlsx)}
 \usage{
-calib(x)
+calib(file = "")
+}
+\arguments{
+\item{file}{Full path of the file (.xlsx)}
 }
 \description{
-calib
+Function to import the calib spreadsheet (.xlsx)
 }
