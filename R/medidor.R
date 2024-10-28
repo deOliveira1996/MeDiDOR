@@ -23,6 +23,7 @@ import_data <- function(file = "") {
 #' @importFrom tidyr gather
 #' @importFrom dplyr arrange
 #' @keywords internal
+#' @export
 
 dtfilter <- function(x) {
   x <- x %>%
@@ -52,6 +53,7 @@ dtfilter <- function(x) {
 
 #' @title slow_function
 #' @keywords internal
+#' @export
 
 slow_function <- function() {
   Sys.sleep(2)
@@ -87,6 +89,7 @@ calib <- function(file = "") {
 #' @importFrom shiny showModal
 #' @importFrom shiny modalDialog
 #' @importFrom shiny modalButton
+#' @export
 
 create_data <- function(segments = 2,
                         path = NULL,

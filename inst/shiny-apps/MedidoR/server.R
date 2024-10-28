@@ -82,6 +82,7 @@ server <- function(input, output, session) {
 
   img1 <- shiny::reactiveVal()
   ranges <- shiny::reactiveValues()
+  brush <- shiny::reactiveVal()
 
   #################################
   # Setting the working directory #
@@ -203,9 +204,9 @@ server <- function(input, output, session) {
       list.files()
 
     if (input$segments == 1 && data_in[1] == T) {
+
       cur_dir(paste(user_dir(), "/10%_interval",
                     sep = ""))
-
       p10 <- paste(cur_dir(), "/Measurements_10.xlsx",
                    sep = "")
       p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx",
@@ -240,10 +241,12 @@ server <- function(input, output, session) {
 
     if (input$segments == 2 && data_in[2] == T) {
 
-      cur_dir(paste(user_dir(), "/05%_interval", sep = ""))
-
-      p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
-      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx", sep = "")
+      cur_dir(paste(user_dir(), "/05%_interval",
+                    sep = ""))
+      p05 <- paste(cur_dir(), "/Measurements_05.xlsx",
+                   sep = "")
+      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx",
+                     sep = "")
 
       shiny::showModal(
         shiny::modalDialog(
@@ -286,8 +289,6 @@ server <- function(input, output, session) {
       img1(im)
     }
   })
-
-  brush <- reactiveVal()
 
   output$imagePlot <- renderPlot({
     shiny::req(input$file)
@@ -837,6 +838,8 @@ server <- function(input, output, session) {
                               disabled = F)
     shiny::updateActionButton(inputId = "saveBtn",
                               disabled = F)
+    ranges$x <- NULL
+    ranges$y <- NULL
 
   })
 

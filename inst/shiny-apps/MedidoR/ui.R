@@ -8,7 +8,9 @@ ui <- shiny::fluidPage(
       shiny::wellPanel(
         shiny::fluidRow(shiny::strong("Input Data")),
         width = 2,
-        shiny::actionButton("path", "Change working directory", width = "100%"),
+        shiny::actionButton("path",
+                            "Change working directory",
+                            width = "100%"),
         shiny::fileInput(
           "file",
           "Select an image file",
@@ -23,8 +25,14 @@ ui <- shiny::fluidPage(
           selected = 2
         ),
         shiny::fluidRow(
-          column(width = 6, actionButton("create", "CREATE", width = "100%")),
-          column(width = 6, actionButton("import", "IMPORT", width = "100%")),
+          column(width = 6,
+                 actionButton("create",
+                              "CREATE",
+                              width = "100%")),
+          column(width = 6,
+                 actionButton("import",
+                              "IMPORT",
+                              width = "100%")),
           shiny::helpText("The", strong("CREATE"), "button creates a data frame
                         (for measurements every 5% or 10% of the body length)"),
           shiny::helpText("The", strong("IMPORT"), "button imports a data frame
