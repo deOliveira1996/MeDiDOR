@@ -106,7 +106,6 @@ server <- function(input, output, session) {
     if (input$segments == 1 && data_in[1] == F) {
 
       dir.create("./10%_interval")
-
       cur_dir(paste(user_dir(), "/10%_interval",
                     sep = ""))
       p10 <- paste(cur_dir(), "/Measurements_10.xlsx",
@@ -133,7 +132,9 @@ server <- function(input, output, session) {
 
         DT::datatable(measurements)
       })
-    } else {
+    }
+
+    if (input$segments == 1 && data_in[1] == T) {
       shiny::showModal(
         shiny::modalDialog(
           title = "Dataframe already exist in directory",
@@ -147,7 +148,6 @@ server <- function(input, output, session) {
     if (input$segments == 2 && data_in[2] == F) {
 
       dir.create("./05%_interval")
-
       cur_dir(paste(user_dir(), "/05%_interval",
                     sep = ""))
       p05 <- paste(cur_dir(), "/Measurements_05.xlsx",
@@ -167,14 +167,15 @@ server <- function(input, output, session) {
           easyClose = TRUE
         )
       )
-
       # Display measurements table
       output$mTable <- DT::renderDataTable({
         measurements <- readxl::read_xlsx(path = p05.1, col_names = T)
 
         DT::datatable(measurements)
       })
-    } else {
+    }
+
+    if (input$segments == 2 && data_in[2] == T) {
       shiny::showModal(
         shiny::modalDialog(
           title = "Dataframe already exist in directory",
@@ -216,7 +217,8 @@ server <- function(input, output, session) {
 
         DT::datatable(measurements)
       })
-    } else {
+    }
+    if (input$segments == 1 && data_in[1] == F) {
       shiny::showModal(
         shiny::modalDialog(
           title = "Dataframe not exist in directory",
@@ -252,7 +254,9 @@ server <- function(input, output, session) {
 
         DT::datatable(measurements)
       })
-    } else {
+    }
+
+    if (input$segments == 2 && data_in[2] == F) {
       shiny::showModal(
         shiny::modalDialog(
           title = "Dataframe not exist in directory",
@@ -417,9 +421,11 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$crop, {
     shiny::req(input$file)
-    brush <- input$plot_brush
     shiny::updateActionButton(inputId = "crop",
                               disabled = T)
+
+    brush <- input$plot_brush
+
     if (!is.null(brush)) {
       ranges$x <- c(brush$xmin, brush$xmax)
       ranges$y <- c(brush$ymin, brush$ymax)
@@ -639,23 +645,27 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$score, {
     if (input$score == 1) {
-      newdata_10$score = "Good"
-      newdata_05$score = "Good"
+      ifelse(input$segments == 1,
+             newdata_10$score = "Good",
+             newdata_05$score = "Good")
     }
 
     if (input$score == 2) {
-      newdata_10$score = "Moderate"
-      newdata_05$score = "Moderate"
+      ifelse(input$segments == 1,
+             newdata_10$score = "Moderate",
+             newdata_05$score = "Moderate")
     }
 
     if (input$score == 3) {
-      newdata_10$score = "Bad"
-      newdata_05$score = "Bad"
+      ifelse(input$segments == 1,
+             newdata_10$score = "Bad",
+             newdata_05$score = "Bad")
     }
 
     if (input$score == 4) {
-      newdata_10$score = "Not assingned"
-      newdata_05$score = "Not assingned"
+      ifelse(input$segments == 1,
+             newdata_10$score = "Not assingned",
+             newdata_05$score = "Not assingned")
     }
   })
 
@@ -835,7 +845,9 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$calib, {
 
-    calib_path <- input$calib_path
+    calib_path <- paste(input$calib_path,
+                        "/calib.xlsx",
+                        sep = "")
 
     mdata <- calib(calib_path)
 
@@ -843,9 +855,10 @@ server <- function(input, output, session) {
 
     m1 <- stats::lm(eGSD ~ as.numeric(C_Alt), data = mdata)
 
-    train.control <- caret::trainControl(method = "repeatedcv",
-                                         number = 10,
-                                         repeats = 5)
+    train.control <- caret::trainControl(
+      method = "repeatedcv",
+      number = 10,
+      repeats = 5)
     # Train the model
     model1 <- caret::train(
       eGSD ~ as.numeric(C_Alt),
@@ -1045,9 +1058,12 @@ server <- function(input, output, session) {
       measurements$cGSD <- stats::predict(m1, measurements)
       measurements$EstLength <- measurements$cGSD * measurements$Pixel
 
-      measurements[, 11] <- round(measurements[, 11], digits = 4)
-      measurements[, 12] <- round(measurements[, 12], digits = 2)
-      measurements[, 15] <- round(measurements[, 15], digits = 2)
+      measurements[, 11] <- round(measurements[, 11],
+                                  digits = 4)
+      measurements[, 12] <- round(measurements[, 12],
+                                  digits = 2)
+      measurements[, 15] <- round(measurements[, 15],
+                                  digits = 2)
 
       writexl::write_xlsx(measurements, path = paste(
         cur_dir(),

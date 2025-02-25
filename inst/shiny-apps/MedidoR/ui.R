@@ -2,7 +2,7 @@
 
 ui <- shiny::fluidPage(
   htmltools::includeCSS("photogrammetry.css"),
-  shiny::titlePanel("MeDiDOR"),
+  shiny::titlePanel("MedidoR"),
   shiny::sidebarLayout(
     shiny::sidebarPanel(
       shiny::wellPanel(
@@ -44,8 +44,10 @@ ui <- shiny::fluidPage(
         shiny::fluidRow(
           shiny::strong("Image parameters"),
           shiny::p(),
-          shiny::textInput("Species", "Species name:", placeholder = "Given Species name"),
-          shiny::textInput("ImageID", "Image-ID:", placeholder = "Given the Image-ID"),
+          shiny::textInput("Species", "Species name:",
+                           placeholder = "Given Species name"),
+          shiny::textInput("ImageID", "Image-ID:",
+                           placeholder = "Given the Image-ID"),
         )
       ),
         shiny::fluidRow(
@@ -60,7 +62,9 @@ ui <- shiny::fluidPage(
               step = 5
             ),
             shiny::br(),
-            shiny::numericInput("takeof", "Take-off Altitude (m)", 0)
+            shiny::numericInput("takeof",
+                                "Take-off Altitude (m)",
+                                value = 0)
           ),
           shiny::column(
             width = 6,
@@ -76,17 +80,22 @@ ui <- shiny::fluidPage(
                 ),
               selected = 4
             ),
-            shiny::textInput("drone", "Drone model:", value = "")
+            shiny::textInput("drone",
+                             "Drone model:",
+                             value = "")
           ),
         ),
 
         shiny::fluidRow(
           shiny::column(
             width = 6,
-            shiny::textInput("Date", "Image collection date: YYYY-MM-DD", value = "")
+            shiny::textInput("Date",
+                             "Image collection date: YYYY-MM-DD",
+                             value = "")
           ),
           shiny::column(width = 6,
-                        shiny::textInput("obs", "Observer:",
+                        shiny::textInput("obs",
+                                         "Observer:",
                                          value = "")),
           shiny::column(
             width = 12,
@@ -99,7 +108,9 @@ ui <- shiny::fluidPage(
           )
         ),
 
-        shiny::actionButton("closeBtn", "Close application", width = "100%")
+        shiny::actionButton("closeBtn",
+                            "Close application",
+                            width = "100%")
       ),
 
     shiny::mainPanel(
@@ -262,7 +273,7 @@ ui <- shiny::fluidPage(
           ),
           shiny::p(
             "Now that you've learned how to use",
-            shiny::strong(shiny::em(" PhotogrammetryGUI")),
+            shiny::strong(shiny::em(" MedidoR")),
             ", have fun!"
           )
         ),
@@ -297,7 +308,8 @@ ui <- shiny::fluidPage(
           shiny::p(),
           shinycssloaders::withSpinner(
             DT::dataTableOutput("mTable"),
-            type = getOption("spinner.type", default = 4)
+            type = getOption("spinner.type",
+                             default = 4)
           )
         ),
 
@@ -325,8 +337,10 @@ ui <- shiny::fluidPage(
             shiny::fluidRow(shiny::strong("Diagnostic plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("checkm", height = "600"),
-              type = getOption("spinner.type", default = 4)
+              shiny::plotOutput("checkm",
+                                height = "600"),
+              type = getOption("spinner.type",
+                               default = 4)
             )
           ),
           shiny::p(),
@@ -334,16 +348,20 @@ ui <- shiny::fluidPage(
             shiny::fluidRow(shiny::strong("Accuracy plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("meanplot", height = "600"),
-              type = getOption("spinner.type", default = 4)
+              shiny::plotOutput("meanplot",
+                                height = "600"),
+              type = getOption("spinner.type",
+                               default = 4)
             )
           ),
           shiny::wellPanel(
             shiny::fluidRow(shiny::strong("Regression plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("mplot", height = "600"),
-              type = getOption("spinner.type", default = 4)
+              shiny::plotOutput("mplot",
+                                height = "600"),
+              type = getOption("spinner.type",
+                               default = 4)
             )
           )
         ),
@@ -360,16 +378,23 @@ ui <- shiny::fluidPage(
           ),
           shiny::p(),
           shiny::wellPanel(
-            shiny::fluidRow(shiny::strong("Pixel measurements")),
+            shiny::fluidRow(
+              shiny::strong("Pixel measurements")),
             shiny::p(),
-            shinycssloaders::withSpinner(shiny::plotOutput("lplot"), type = getOption("spinner.type", default = 4))
+            shinycssloaders::withSpinner(
+              shiny::plotOutput("lplot"),
+              type = getOption("spinner.type",
+                               default = 4)
+              )
           ),
           shiny::wellPanel(
-            shiny::fluidRow(shiny::strong("Estimated lengths (meters)")),
+            shiny::fluidRow(
+              shiny::strong("Estimated lengths (meters)")),
             shiny::p(),
             shinycssloaders::withSpinner(
               shiny::plotOutput("mwhale"),
-              type = getOption("spinner.type", default = 4)
+              type = getOption("spinner.type",
+                               default = 4)
             )
           )
         )
