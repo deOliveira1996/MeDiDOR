@@ -21,7 +21,7 @@ ui <- shiny::fluidPage(
           "segments",
           "Select the desired width interval to CREATE or IMPORT the dataset:",
           choices =
-            list("10% interval" = 1, "5% interval" = 2),
+            list("10% interval" = 1, "05% interval" = 2),
           selected = 2
         ),
         shiny::fluidRow(
@@ -263,7 +263,7 @@ ui <- shiny::fluidPage(
           ),
           shiny::p(shiny::strong("IMPORTANT !!!")),
           shiny::p(
-            "Upon clicking the start button, PhotogrammetrGUI creates the
+            "Upon clicking the start button, MedidoR creates the
                     'Measurements.xlsx' spreadsheet, where the collected measurements
                     are stored (blank spreadsheet). As the user begins measuring the
                     animals, another spreadsheet is created ('Measurements_1.xlsx'), and
@@ -292,15 +292,14 @@ ui <- shiny::fluidPage(
                 opacity = 0.1,
                 clip = T
               )
-            )
-          ),
-          shiny::actionButton("crop", "CROP",
-                              width = "33%"),
-          shiny::actionButton("saveBtn", "ADD IN",
-                              width = "33%"),
-          shiny::actionButton("clearBtn",
-                              "CLEAR",
-                              width = "33%")
+            )),
+          uiOutput("crop_status"),
+          # Modified button layout
+          div(style = "margin-top: 20px;",
+              shiny::actionButton("crop", "CROP", width = "32%"),
+              shiny::actionButton("saveBtn", "ADD IN", width = "32%"),
+              shiny::actionButton("clearBtn", "CLEAR", width = "32%")
+          )
         ),
 
         shiny::tabPanel(

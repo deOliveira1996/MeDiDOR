@@ -1,1144 +1,745 @@
 ####
 # Functions
 ####
+#' @importFrom caret trainControl train
+#' @importFrom DT renderDataTable datatable
+#' @importFrom ggplot2 ggplot aes geom_point geom_smooth theme_classic position_dodge stat_summary ylab xlab ggtitle geom_hline scale_linetype_manual guide_legend theme element_text geom_col theme_bw
+#' @importFrom graphics plot points segments
+#' @importFrom htmltools tagList
+#' @importFrom performance check_model
+#' @importFrom readxl read_xlsx read_excel
+#' @importFrom shiny reactiveValues observeEvent showModal modalDialog textInput actionButton modalButton reactiveVal removeModal req renderPlot reactiveFileReader updateTextInput updateRadioButtons updateNumericInput stopApp
+#' @importFrom shinycssloaders showSpinner
+#' @importFrom stats na.omit lm predict
+#' @importFrom writexl write_xlsx
+#' @importFrom tidyverse %>%
+#' @export
 
-options(shiny.maxRequestSize = 50 * 1024 ^ 2)
+options(shiny.maxRequestSize = 50 * 1024^2)
 
-wd <- getwd()
-
-# Define the server
+# Define server
 server <- function(input, output, session) {
+  # Reactive values ----
+  rv <- shiny::reactiveValues(
+    # Controle de segmentos
+    segments = NULL,
 
-  # Reactive values
-  measured_animals <- shiny::reactiveValues(
-    length_measurement = data.frame(),
-    width_measurements = data.frame(),
+    # Medições
+    length_measurements = data.frame(Length_X = numeric(),
+                                     Length_Y = numeric()),
+    width_measurements = data.frame(Width_X = numeric(),
+                                    Width_Y = numeric()),
+    fw_measurements = data.frame(Width_X = numeric(),
+                                 Width_Y = numeric()),
+
+    # Dados principais
+    main_data = NULL,
+
+    # Diretórios
+    user_dir = getwd(),
+    current_dir = getwd(),
+
+    # Novos dados
+    new_id = character(),
+    new_score = "Not assigned",
+    new_date = character(),
+    new_f_alt = numeric(),
+    new_to_alt = numeric(),
+    new_calti = numeric(),
+    new_bl = numeric(),
+    new_widths = numeric(),
+    new_fw = numeric(),
+
+    # Imagem
+    current_image = NULL,
+    crop_status = FALSE,
+
+    # Dimensões e ranges
+    img_width = 0,
+    img_height = 0,
+    plot_ranges_x = NULL,
+    plot_ranges_y = NULL,
+
+    # Calibração
+    calib_path = NULL,
+    calib_data = NULL,
+    calib_model = NULL
   )
 
-  newdata_10 <- shiny::reactiveValues(
-    ID = character(),
-    score = character(),
-    Date = character(),
-    F_Alt = numeric(),
-    TO_Alt = numeric(),
-    Calti = numeric(),
-    BL = numeric(),
-    width10 = numeric(),
-    width20 = numeric(),
-    width30 = numeric(),
-    width40 = numeric(),
-    width50 = numeric(),
-    width60 = numeric(),
-    width70 = numeric(),
-    width80 = numeric(),
-    width90 = numeric(),
-    fw = numeric()
-  )
-
-  newdata_05 <- shiny::reactiveValues(
-    ID = character(),
-    score = character(),
-    Date = character(),
-    F_Alt = numeric(),
-    TO_Alt = numeric(),
-    Calti = numeric(),
-    BL = numeric(),
-    width05 = numeric(),
-    width10 = numeric(),
-    width15 = numeric(),
-    width20 = numeric(),
-    width25 = numeric(),
-    width30 = numeric(),
-    width35 = numeric(),
-    width40 = numeric(),
-    width45 = numeric(),
-    width50 = numeric(),
-    width55 = numeric(),
-    width60 = numeric(),
-    width65 = numeric(),
-    width70 = numeric(),
-    width75 = numeric(),
-    width80 = numeric(),
-    width85 = numeric(),
-    width90 = numeric(),
-    width95 = numeric(),
-    fw = numeric()
-  )
-
-  cur_dir <- shiny::reactiveVal(value = as.character())
-  user_dir <- shiny::reactiveVal(value = as.character())
-
-  img1 <- shiny::reactiveVal()
-  ranges <- shiny::reactiveValues()
-  brush <- shiny::reactiveVal()
-
-  #################################
-  # Setting the working directory #
-  #################################
-
-  shiny::observeEvent(input$path, {
-    shiny::showModal(shiny::modalDialog(
-      shiny::textInput("wd", "Enter the directory path:", ""),
-      footer = htmltools::tagList(
-        shiny::actionButton("confirmBtn", "Confirm"),
-        shiny::modalButton("Cancel")
-      )
-    ))
+  observeEvent(input$segments, {
+    rv$segments <- input$segments
   })
+
+  # Helper functions
+  handle_fluke_measurements <- function(x , y) {
+
+    if(nrow(rv$fw_measurements) != 2) {
+      rv$fw_measurements <- rbind(rv$fw_measurements,
+                                  data.frame(Width_X = x, Width_Y = y))
+    }
+
+    if (nrow(rv$fw_measurements) == 2) {
+      show_measurement_modal("Measurements complete")
+      # process_measurements()
+    }
+  }
+
+  handle_width_measurement <- function(x, y) {
+    target <- ifelse(input$segments == 1, 18, 38)
+
+    # Adiciona pontos apenas se ainda não atingiu o target
+    if (nrow(rv$width_measurements) != target) {
+      rv$width_measurements <- rbind(rv$width_measurements,
+                                     data.frame(Width_X = x, Width_Y = y))
+    }
+
+    # Lógica para transição entre width e fw measurements
+    if (nrow(rv$width_measurements) == target) {
+      show_measurement_modal("Width measurements completed. Take Fluke width.")
+      handle_fluke_measurements(x, y)
+    }
+  }
+
+  process_measurements <- function() {
+    coords <- rv$width_measurements
+    pairs <- data.frame(
+      x1 = coords$Width_X[seq(2, nrow(coords), 2)],
+      y1 = coords$Width_Y[seq(2, nrow(coords), 2)],
+      x2 = coords$Width_X[seq(3, nrow(coords), 2)],
+      y2 = coords$Width_Y[seq(3, nrow(coords), 2)]
+    )
+
+    widths <- sqrt((pairs$x2 - pairs$x1)^2 + (pairs$y2 - pairs$y1)^2)
+    rv$new_widths <- widths[1:(length(widths))]
+    rv$new_fw <- sqrt((rv$fw_measurements$Width_X[2] -rv$fw_measurements$Width_X[1])^2 + (rv$fw_measurements$Width_Y[2] - rv$fw_measurements$Width_X[1])^2)
+    rv$new_id = input$ImageID
+    rv$new_date = input$Date
+    rv$new_f_alt = input$alt
+    rv$new_to_alt = input$takeof
+    rv$new_calti = input$alt + input$takeof
+    rv$new_bl = sum(sqrt(
+      diff(rv$length_measurements$Length_X)^2 +
+        diff(rv$length_measurements$Length_Y)^2
+    ))
+  }
+
+  create_new_entry <- function(interval) {
+    if (interval == 10) {
+      data.frame(
+        Drone = input$drone,
+        Obs = input$obs,
+        Species = input$Species,
+        rv$newdata$metadata,
+        WD_10 = rv$new_widths[1],
+        WD_20 = rv$new_widths[2],
+        WD_30 = rv$new_widths[3],
+        WD_40 = rv$new_widths[4],
+        WD_50 = rv$new_widths[5],
+        WD_60 = rv$new_widths[6],
+        WD_70 = rv$new_widths[7],
+        WD_80 = rv$new_widths[8],
+        WD_90 = rv$new_widths[9],
+        WD_F = rv$new_fw,
+        cGSD = 0,
+        EstLength = 0,
+        Comments = input$comments
+      )
+    } else {
+      data.frame(
+        Drone = input$drone,
+        Obs = input$obs,
+        Species = input$Species,
+        rv$newdata$metadata,
+        WD_05 = rv$new_widths[1],
+        WD_10 = rv$new_widths[2],
+        WD_15 = rv$new_widths[3],
+        WD_20 = rv$new_widths[4],
+        WD_25 = rv$new_widths[5],
+        WD_30 = rv$new_widths[6],
+        WD_35 = rv$new_widths[7],
+        WD_40 = rv$new_widths[8],
+        WD_45 = rv$new_widths[9],
+        WD_50 = rv$new_widths[10],
+        WD_55 = rv$new_widths[11],
+        WD_60 = rv$new_widths[12],
+        WD_65 = rv$new_widths[13],
+        WD_70 = rv$new_widths[14],
+        WD_75 = rv$new_widths[15],
+        WD_80 = rv$new_widths[16],
+        WD_85 = rv$new_widths[17],
+        WD_90 = rv$new_widths[18],
+        WD_95 = rv$new_widths[19],
+        WD_F = rv$new_fw,
+        cGSD = 0,
+        EstLength = 0,
+        Comments = input$comments
+      )
+    }
+  }
+
+  # Measurement line drawer
+  draw_measurement_lines <- function() {
+    req(
+      rv$current_image,
+      rv$length_measurements,
+      rv$segments
+    )
+
+    lp <- rv$length_measurements
+    if (nrow(lp) < 3) return()
+
+    start <- data.frame(x = lp$Length_X[1], y = lp$Length_Y[1])
+    mid <- data.frame(x = lp$Length_X[2], y = lp$Length_Y[2])
+    end <- data.frame(x = lp$Length_X[3], y = lp$Length_Y[3])
+
+    # Desenha linha principal
+    graphics::segments(start$x,
+                       start$y,
+                       mid$x,
+                       mid$y,
+                       col = "red",
+                       lwd = 1.5)
+
+    graphics::segments(mid$x,
+                       mid$y,
+                       end$x,
+                       end$y,
+                       col = "red",
+                       lwd = 1.5)
+
+    # Cálculo vetorial no sistema de coordenadas original
+    original_dx <- end$x - start$x
+    original_dy <- end$y - start$y
+    perpendicular <- c(-original_dy, original_dx) / sqrt(original_dx^2 + original_dy^2)
+
+    # Parâmetros dos intervalos
+    intervals <- ifelse(input$segments == 1, 9, 19)
+
+    total_length <- sum(sqrt(diff(lp$Length_X)^2 + diff(lp$Length_Y)^2))
+
+    for (i in 1:intervals) {
+      fraction <- i / (intervals + 1)
+
+      # Ponto na linha original
+      original_x <- start$x + original_dx * fraction
+      original_y <- start$y + original_dy * fraction
+
+      # Converte ponto central
+      center <- data.frame(x = original_x, y = original_y)
+
+      # Calcula extremidades da linha perpendicular
+      line_length <- total_length * 2
+      offset_x <- perpendicular[1] * line_length / 2
+      offset_y <- perpendicular[2] * line_length / 2
+
+      # Desenha linha perpendicular
+      graphics::segments(
+        center$x - offset_x,
+        center$y - offset_y,
+        center$x + offset_x,
+        center$y + offset_y,
+        col = "blue",
+        lty = "dashed"
+      )
+    }
+  }
+
+  # Path  block
+
+  # Directory handling ----
+  shiny::observeEvent(input$path, {
+    shiny::showModal(
+      shiny::modalDialog(
+        title = "Set Working Directory",
+        shiny::textInput("wd", "Enter directory path:", value = getwd()),
+        footer = tagList(
+          shiny::actionButton("confirmBtn", "Confirm", class = "btn-primary"),
+          shiny::modalButton("Cancel")
+        )
+      )
+    )
+  })
+
+  # Confirmation  block
 
   shiny::observeEvent(input$confirmBtn, {
+    req(input$wd)
     setwd(input$wd)
-
-    user_dir(input$wd)
-
-    shiny::removeModal()  # close dialog box
+    rv$user_dir <- input$wd
+    shiny::removeModal()
   })
 
-  ###############################
-  # Creating a start data frame #
-  ###############################
+  # Create  block
 
+  # Data frame management
   shiny::observeEvent(input$create, {
+    req(rv$user_dir, rv$segments)
 
-    data_in <- list("10%_interval", "05%_interval") %in%
-      list.files()
+    dir_path <- get_directory_path(rv$segments, rv$user_dir)
+    paths <- get_file_paths(dir_path, rv$segments)
 
-    if (input$segments == 1 && data_in[1] == F) {
-
-      dir.create("./10%_interval")
-      cur_dir(paste(user_dir(), "/10%_interval",
-                    sep = ""))
-      p10 <- paste(cur_dir(), "/Measurements_10.xlsx",
-                   sep = "")
-      p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx",
-                     sep = "")
-
-      measurements <- create_data(segments = 1,
-                                  path = p10,
-                                  path2 = p10.1)
-
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe created",
-          "10% intervals",
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
+    if (!dir.exists(dir_path)) {
+      dir.create(dir_path)
+      create_data(
+        segments = rv$segments,
+        path = paths$main,
+        path2 = paths$secondary
       )
-
-      # Display measurements table
-      output$mTable <- DT::renderDataTable({
-        measurements <- readxl::read_xlsx(path = p10.1, col_names = T)
-
-        DT::datatable(measurements)
-      })
-    }
-
-    if (input$segments == 1 && data_in[1] == T) {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe already exist in directory",
-          "Import the data",
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-    }
-
-    if (input$segments == 2 && data_in[2] == F) {
-
-      dir.create("./05%_interval")
-      cur_dir(paste(user_dir(), "/05%_interval",
-                    sep = ""))
-      p05 <- paste(cur_dir(), "/Measurements_05.xlsx",
-                   sep = "")
-      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx",
-                     sep = "")
-
-      measurements <- create_data(segments = 2,
-                                  path = p05,
-                                  path2 = p05.1)
-
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe created",
-          "5% intervals",
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-      # Display measurements table
-      output$mTable <- DT::renderDataTable({
-        measurements <- readxl::read_xlsx(path = p05.1, col_names = T)
-
-        DT::datatable(measurements)
-      })
-    }
-
-    if (input$segments == 2 && data_in[2] == T) {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe already exist in directory",
-          "Import the data",
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-    }
-  })
-
-  shiny::observeEvent(input$import, {
-
-    data_in <- list("10%_interval", "05%_interval") %in%
-      list.files()
-
-    if (input$segments == 1 && data_in[1] == T) {
-
-      cur_dir(paste(user_dir(), "/10%_interval",
-                    sep = ""))
-      p10 <- paste(cur_dir(), "/Measurements_10.xlsx",
-                   sep = "")
-      p10.1 <- paste(cur_dir(), "/Measurements_10_1.xlsx",
-                     sep = "")
-
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe already exist in directory",
-          paste("Dataframe imported: 10% interval",
-                sep = ""),
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-
-      # Display measurements table
-      output$mTable <- DT::renderDataTable({
-        measurements <- readxl::read_xlsx(path = p10.1, col_names = T)
-
-        DT::datatable(measurements)
-      })
-    }
-    if (input$segments == 1 && data_in[1] == F) {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe not exist in directory",
-          paste("Create a 10% interval dataframe before", sep = ""),
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-    }
-
-    if (input$segments == 2 && data_in[2] == T) {
-
-      cur_dir(paste(user_dir(), "/05%_interval",
-                    sep = ""))
-      p05 <- paste(cur_dir(), "/Measurements_05.xlsx",
-                   sep = "")
-      p05.1 <- paste(cur_dir(), "/Measurements_05_1.xlsx",
-                     sep = "")
-
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe already exist in directory",
-          paste("Dataframe imported: 5% interval", sep = ""),
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-
-      # Display measurements table
-
-      output$mTable <- DT::renderDataTable({
-        measurements <- readxl::read_xlsx(path = p05.1, col_names = T)
-
-        DT::datatable(measurements)
-      })
-    }
-
-    if (input$segments == 2 && data_in[2] == F) {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Dataframe not exist in directory",
-          paste("Create a 5% interval dataframe before", sep = ""),
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
-        )
-      )
-    }
-  })
-
-  #########################
-  # Render the image plot #
-  #########################
-
-  shiny::observeEvent(input$file, {
-    shiny::req(input$file)
-
-    if (!is.null(input$file) && !is.null(input$file$datapath)) {
-
-      im <- imager::load.image(input$file$datapath)
-      img1(im)
-    }
-  })
-
-  output$imagePlot <- renderPlot({
-    shiny::req(input$file)
-
-    if (!is.null(ranges$x) && !is.null(ranges$y)) {
-      graphics::plot(img1(),
-           xlim = ranges$x,
-           ylim = ranges$y,
-           main = input$file$name)
-      # Add red dots for length points
-      if (!is.null(measured_animals$length_measurement) &&
-          nrow(measured_animals$length_measurement <= 3)) {
-        graphics::points(
-          measured_animals$length_measurement$Length_X,
-          measured_animals$length_measurement$Length_Y,
-          col = "red",
-          cex = 1.5
-        )
-      }
-
-      # Connect length points and draw the line passing through the 3 points
-      if (nrow(measured_animals$length_measurement) == 3 &&
-          input$segments == 1) {
-        x <- measured_animals$length_measurement$Length_X
-        y <- measured_animals$length_measurement$Length_Y
-
-        # Draw the line passing through the 3 points
-        graphics::segments(x[1], y[1], x[2], y[2], col = "red")
-        graphics::segments(x[2], y[2], x[3], y[3], col = "red")
-
-        # Calculate the perpendicular direction
-        dx <- x[3] - x[1]
-        dy <- y[3] - y[1]
-        perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
-
-        # Calculate the length as the sum of distances between the points
-        length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
-
-        # Draw parallel lines at 10% intervals
-        for (i in 1:9) {
-          length_fraction <- i / 10
-          x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
-          y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
-          line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
-
-          # Calculate the coordinates of the parallel lines
-          x1 <- x_parallel - line_length * perpendicular_direction[1]
-          y1 <- y_parallel - line_length * perpendicular_direction[2]
-          x2 <- x_parallel + line_length * perpendicular_direction[1]
-          y2 <- y_parallel + line_length * perpendicular_direction[2]
-
-          graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
-        }
-
-        # Add yellow dots for width measurements
-        if (!is.null(measured_animals$width_measurements)
-            && nrow(measured_animals$length_measurement == 3)) {
-          graphics::points(
-            measured_animals$width_measurements$Width_X,
-            measured_animals$width_measurements$Width_Y,
-            col = "yellow",
-            pch = 4,
-            cex = 2
-          )
-        }
-
-        if (input$segments == 1 &&
-            nrow(measured_animals$width_measurements == 21)) {
-          x <- measured_animals$width_measurements$Width_X
-          y <- measured_animals$width_measurements$Width_Y
-
-          # Draw the line passing through fluke width
-          graphics::segments(x[20], y[20], x[21], y[21],
-                             col = "green")
-        }
-      }
-      # Connect length points and draw the line passing through the 3 points
-      if (nrow(measured_animals$length_measurement) == 3 &&
-          input$segments == 2) {
-        x <- measured_animals$length_measurement$Length_X
-        y <- measured_animals$length_measurement$Length_Y
-
-        # Draw the line passing through the 3 points
-        graphics::segments(x[1], y[1], x[2], y[2], col = "red")
-        graphics::segments(x[2], y[2], x[3], y[3], col = "red")
-
-        # Calculate the perpendicular direction
-        dx <- x[3] - x[1]
-        dy <- y[3] - y[1]
-        perpendicular_direction <- c(dy, -dx) / sqrt(dx ^ 2 + dy ^ 2)
-
-        # Calculate the length as the sum of distances between the points
-        length_pixels <- sum(sqrt(diff(x) ^ 2 + diff(y) ^ 2))
-
-        # Draw parallel lines at 10% intervals
-        for (i in 1:19) {
-          length_fraction <- i / 20
-          x_parallel <- x[1] + (x[3] - x[1]) * length_fraction
-          y_parallel <- y[1] + (y[3] - y[1]) * length_fraction
-          line_length <- length_pixels * length_fraction * 2  # Adjust the length of the parallel lines
-
-          # Calculate the coordinates of the parallel lines
-          x1 <- x_parallel - line_length * perpendicular_direction[1]
-          y1 <- y_parallel - line_length * perpendicular_direction[2]
-          x2 <- x_parallel + line_length * perpendicular_direction[1]
-          y2 <- y_parallel + line_length * perpendicular_direction[2]
-
-          graphics::segments(x1, y1, x2, y2, col = "blue", lty = "dashed")
-        }
-
-        # Add yellow dots for width measurements
-        if (!is.null(measured_animals$width_measurements)
-            && nrow(measured_animals$length_measurement == 3)) {
-          graphics::points(
-            measured_animals$width_measurements$Width_X,
-            measured_animals$width_measurements$Width_Y,
-            col = "yellow",
-            pch = 4,
-            cex = 2
-          )
-        }
-
-        if (input$segments == 2 &&
-            nrow(measured_animals$width_measurements == 41)) {
-          x <- measured_animals$width_measurements$Width_X
-          y <- measured_animals$width_measurements$Width_Y
-
-          # Draw the line passing through fluke width
-          graphics::segments(x[40], y[40], x[41], y[41], col = "green")
-
-        }
-      }
-
-    } else {
-      graphics::plot(img1(), main = input$file$name)
-    }
-  })
-
-  shiny::observeEvent(input$crop, {
-    shiny::req(input$file)
-    shiny::updateActionButton(inputId = "crop",
-                              disabled = T)
-
-    brush <- input$plot_brush
-
-    if (!is.null(brush)) {
-      ranges$x <- c(brush$xmin, brush$xmax)
-      ranges$y <- c(brush$ymin, brush$ymax)
-
-    } else {
-      ranges$x <- NULL
-      ranges$y <- NULL
-    }
-  })
-
-  #########################################
-  # Capture length and width measurements #
-  #########################################
-
-  shiny::observeEvent(input$plot_click, {
-    ##########################
-    # Calculating plot cords #
-    ##########################
-
-    if (!is.null(input$file) &&
-        nrow(measured_animals$length_measurement) < 3 &&
-        input$crop == T) {
-      x <- input$plot_click$x
-      y <- input$plot_click$y
-
-      measured_animals$length_measurement <- rbind(measured_animals$length_measurement,
-                                                   data.frame(Length_X = x, Length_Y = y))
-
-      length_measurement <- sum(sqrt(
-        diff(measured_animals$length_measurement$Length_X) ^ 2 + diff(measured_animals$length_measurement$Length_Y) ^
-          2
+      shiny::showModal(shiny::modalDialog(
+        title = "Success",
+        paste(
+          ifelse(input$segments == 1, "10%", "5%"),
+          "interval dataframe created"
+        ),
+        footer = shiny::modalButton("OK")
       ))
 
-      newdata_10$BL = length_measurement
-      newdata_05$BL = length_measurement
+      rv$main_data <- readxl::read_xlsx(paths$secondary)
 
-      if (nrow(measured_animals$length_measurement) == 3) {
-        shiny::showModal(
-          shiny::modalDialog(
-            title = "Measure Length",
-            "Length measurements completed. Take the widths.",
-            footer = shiny::modalButton("OK"),
-            easyClose = TRUE
-          )
+      output$mTable <- DT::renderDataTable({
+        DT::datatable(readxl::read_xlsx(paths$secondary))
+      })
+
+    } else {
+      shiny::showModal(
+        modalDialog(
+          title = "Info",
+          "Dataframe already exists, please IMPORT instead",
+          footer = shiny::modalButton("OK")
         )
-      }
-    }
-
-    if (!is.null(input$file) &&
-        nrow(measured_animals$length_measurement) == 3 &&
-        input$segments == 1) {
-      if (nrow(measured_animals$width_measurements) <= 21) {
-        x1 <- input$plot_click$x
-        y1 <- input$plot_click$y
-
-        measured_animals$width_measurements <- rbind(measured_animals$width_measurements,
-                                                     data.frame(Width_X = x1, Width_Y = y1))
-
-        if (nrow(measured_animals$width_measurements) == 19) {
-          shiny::showModal(
-            shiny::modalDialog(
-              title = "Width measurements completed",
-              "Take Fluke width.",
-              footer = shiny::modalButton("OK"),
-              easyClose = TRUE
-            )
-          )
-        }
-
-        if (nrow(measured_animals$width_measurements) == 21) {
-          shiny::showModal(
-            shiny::modalDialog(
-              title = "Fluke width",
-              "Fluke width measurements taken",
-              footer = shiny::modalButton("OK"),
-              easyClose = TRUE
-            )
-          )
-
-          ##########################################
-          # Assigning values to reactive variables #
-          ##########################################
-
-          coord1 <- measured_animals$width_measurements[seq(2, nrow(measured_animals$width_measurements), by = 2), ]
-
-
-          coord2 <- measured_animals$width_measurements[seq(3, nrow(measured_animals$width_measurements), by = 2), ]
-
-          distances <- numeric(nrow(coord1)) / 2
-
-          for (i in 1:nrow(measured_animals$width_measurements)) {
-            x1 <- coord1$Width_X[i]
-            y1 <- coord1$Width_Y[i]
-
-            x2 <- coord2$Width_X[i]
-            y2 <- coord2$Width_Y[i]
-
-            # Calculate the distance using the Euclidean distance formula
-            distance <- sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
-
-            distances[i] <- distance
-
-          }
-
-          width_measurements <- stats::na.omit(distances)
-
-          # Store user input
-          newdata_10$ID = input$ImageID
-          newdata_10$F_Alt = input$alt
-          newdata_10$TO_Alt = input$takeof
-          newdata_10$Date = input$Date
-
-          newdata_10$fw = width_measurements[10]
-          newdata_10$width90 = width_measurements[9]
-          newdata_10$width80 = width_measurements[8]
-          newdata_10$width70 = width_measurements[7]
-          newdata_10$width60 = width_measurements[6]
-          newdata_10$width50 = width_measurements[5]
-          newdata_10$width40 = width_measurements[4]
-          newdata_10$width30 = width_measurements[3]
-          newdata_10$width20 = width_measurements[2]
-          newdata_10$width10 = width_measurements[1]
-          newdata_10$Calti = newdata_10$F_Alt + newdata_10$TO_Alt
-        }
-      }
-    }
-
-    if (!is.null(input$file) &&
-        nrow(measured_animals$length_measurement) == 3 &&
-        input$segments == 2) {
-      if (nrow(measured_animals$width_measurements) <= 41) {
-        x1 <- input$plot_click$x
-        y1 <- input$plot_click$y
-
-        measured_animals$width_measurements <- rbind(measured_animals$width_measurements,
-                                                     data.frame(Width_X = x1, Width_Y = y1))
-
-        if (nrow(measured_animals$width_measurements) == 39) {
-          shiny::showModal(
-            shiny::modalDialog(
-              title = "Width measurements completed",
-              "Take Fluke width.",
-              footer = shiny::modalButton("OK"),
-              easyClose = TRUE
-            )
-          )
-        }
-
-        if (nrow(measured_animals$width_measurements) == 41) {
-          shiny::showModal(
-            shiny::modalDialog(
-              title = "Fluke width",
-              "Fluke width measurements taken",
-              footer = shiny::modalButton("OK"),
-              easyClose = TRUE
-            )
-          )
-
-          ##########################################
-          # Assigning values to reactive variables #
-          ##########################################
-
-          coord1 <- measured_animals$width_measurements[seq(2, nrow(measured_animals$width_measurements), by = 2), ]
-
-
-          coord2 <- measured_animals$width_measurements[seq(3, nrow(measured_animals$width_measurements), by = 2), ]
-
-          distances <- numeric(nrow(coord1)) / 2
-
-          for (i in 1:nrow(measured_animals$width_measurements)) {
-            x1 <- coord1$Width_X[i]
-            y1 <- coord1$Width_Y[i]
-
-            x2 <- coord2$Width_X[i]
-            y2 <- coord2$Width_Y[i]
-
-            # Calculate the distance using the Euclidean distance formula
-            distance <- sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
-
-            distances[i] <- distance
-
-          }
-
-          width_measurements <- stats::na.omit(distances)
-
-          # Store user input
-          newdata_05$ID = input$ImageID
-          newdata_05$F_Alt = input$alt
-          newdata_05$TO_Alt = input$takeof
-          newdata_05$Date = input$Date
-
-          newdata_05$fw = width_measurements[20]
-          newdata_05$width95 = width_measurements[19]
-          newdata_05$width90 = width_measurements[18]
-          newdata_05$width85 = width_measurements[17]
-          newdata_05$width80 = width_measurements[16]
-          newdata_05$width75 = width_measurements[15]
-          newdata_05$width70 = width_measurements[14]
-          newdata_05$width65 = width_measurements[13]
-          newdata_05$width60 = width_measurements[12]
-          newdata_05$width55 = width_measurements[11]
-          newdata_05$width50 = width_measurements[10]
-          newdata_05$width45 = width_measurements[9]
-          newdata_05$width40 = width_measurements[8]
-          newdata_05$width35 = width_measurements[7]
-          newdata_05$width30 = width_measurements[6]
-          newdata_05$width25 = width_measurements[5]
-          newdata_05$width20 = width_measurements[4]
-          newdata_05$width15 = width_measurements[3]
-          newdata_05$width10 = width_measurements[2]
-          newdata_05$width05 = width_measurements[1]
-          newdata_05$Calti = newdata_05$F_Alt + newdata_05$TO_Alt
-        }
-      }
+      )
     }
   })
 
-  shiny::observeEvent(input$score, {
-    if (input$score == 1) {
-      ifelse(input$segments == 1,
-             newdata_10$score = "Good",
-             newdata_05$score = "Good")
-    }
+  # Import  block
 
-    if (input$score == 2) {
-      ifelse(input$segments == 1,
-             newdata_10$score = "Moderate",
-             newdata_05$score = "Moderate")
-    }
+  shiny::observeEvent(input$import, {
+    req(rv$user_dir, rv$segments)
+    dir_path <- get_directory_path(rv$segments, rv$user_dir)
+    paths <- get_file_paths(dir_path, rv$segments)
 
-    if (input$score == 3) {
-      ifelse(input$segments == 1,
-             newdata_10$score = "Bad",
-             newdata_05$score = "Bad")
-    }
-
-    if (input$score == 4) {
-      ifelse(input$segments == 1,
-             newdata_10$score = "Not assingned",
-             newdata_05$score = "Not assingned")
-    }
-  })
-
-  shiny::observeEvent(input$saveBtn, {
-    shiny::updateActionButton(inputId = "saveBtn",
-                              disabled = T)
-
-    if (input$segments == 1) {
-      nd <- data.frame(
-        "Drone" = input$drone,
-        "Obs" = input$obs,
-        "Species" = input$Species,
-        "Date" = newdata_10$Date,
-        "Measured_Date" = as.character(Sys.time()),
-        "ID" = newdata_10$ID,
-        "Frame_Score" = newdata_10$score,
-        "F_Alt" = newdata_10$F_Alt,
-        "TO_Alt" = newdata_10$TO_Alt,
-        "C_Alt" = newdata_10$Calti,
-        "BL" = newdata_10$BL,
-        "WD_10" = newdata_10$width10,
-        "WD_20" = newdata_10$width20,
-        "WD_30" = newdata_10$width30,
-        "WD_40" = newdata_10$width40,
-        "WD_50" = newdata_10$width50,
-        "WD_60" = newdata_10$width60,
-        "WD_70" = newdata_10$width70,
-        "WD_80" = newdata_10$width80,
-        "WD_90" = newdata_10$width90,
-        "WD_F" = newdata_10$fw,
-        "cGSD" = 0,
-        "EstLength" = 0,
-        "Comments" = input$comments
-      )
-
-      # Specify the absolute path to save the file
-
-      p10 <- paste(cur_dir(), "/Measurements_10.xlsx", sep = "")
-
-      measurements <- shiny::reactiveFileReader(
-        session = session,
-        intervalMillis = 1000,
-        filePath = p10,
-        readFunc = readxl::read_excel
-      )
-
-      measurements <- measurements()
-
-      measurements[nrow(measurements) + 1, ] = nd
-
-      writexl::write_xlsx(measurements, path = p10)
-
-      writexl::write_xlsx(dtfilter(measurements),
-                          path = paste(cur_dir(), "/Measurements_10_1.xlsx", sep = ""))
+    if (file.exists(paths$secondary)) {
+      rv$main_data <- readxl::read_xlsx(paths$secondary)
 
       shiny::showModal(
         shiny::modalDialog(
-          title = "Saved",
-          "Measurements are saved",
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
+          title = "Success",
+          "Dataframe imported",
+          footer = shiny::modalButton("OK")
         )
       )
-
-      shinycssloaders::showSpinner("mTable", {
-        Sys.sleep(2)
-      })
-
-      # Display measurements table
       output$mTable <- DT::renderDataTable({
-        DT::datatable(dtfilter(measurements))
-
+        DT::datatable(readxl::read_xlsx(paths$secondary))
       })
-    }
 
-    if (input$segments == 2) {
-      nd <- data.frame(
-        "Drone" = input$drone,
-        "Obs" = input$obs,
-        "Species" = input$Species,
-        "Date" = newdata_05$Date,
-        "Measured_Date" = as.character(Sys.time()),
-        "ID" = newdata_05$ID,
-        "Frame_Score" = newdata_05$score,
-        "F_Alt" = newdata_05$F_Alt,
-        "TO_Alt" = newdata_05$TO_Alt,
-        "C_Alt" = newdata_05$Calti,
-        "BL" = newdata_05$BL,
-        "WD_05" = newdata_05$width05,
-        "WD_10" = newdata_05$width10,
-        "WD_15" = newdata_05$width15,
-        "WD_20" = newdata_05$width20,
-        "WD_25" = newdata_05$width25,
-        "WD_30" = newdata_05$width30,
-        "WD_35" = newdata_05$width35,
-        "WD_40" = newdata_05$width40,
-        "WD_45" = newdata_05$width45,
-        "WD_50" = newdata_05$width50,
-        "WD_55" = newdata_05$width55,
-        "WD_60" = newdata_05$width60,
-        "WD_65" = newdata_05$width65,
-        "WD_70" = newdata_05$width70,
-        "WD_75" = newdata_05$width75,
-        "WD_80" = newdata_05$width80,
-        "WD_85" = newdata_05$width85,
-        "WD_90" = newdata_05$width90,
-        "WD_95" = newdata_05$width95,
-        "WD_F" = newdata_05$fw,
-        "cGSD" = 0,
-        "EstLength" = 0,
-        "Comments" = input$comments
-      )
-
-      # Specify the absolute path to save the file
-
-      p05 <- paste(cur_dir(), "/Measurements_05.xlsx", sep = "")
-
-      measurements <- shiny::reactiveFileReader(
-        session = session,
-        intervalMillis = 1000,
-        filePath = p05,
-        readFunc = readxl::read_excel
-      )
-
-      measurements <- measurements()
-
-      measurements[nrow(measurements) + 1, ] = nd
-
-      writexl::write_xlsx(measurements, path = p05)
-
-      writexl::write_xlsx(dtfilter(measurements),
-                          path = paste(cur_dir(), "/Measurements_05_1.xlsx", sep = ""))
-
+    } else {
       shiny::showModal(
         shiny::modalDialog(
-          title = "Saved",
-          "Measurements are saved",
-          footer = shiny::modalButton("OK"),
-          easyClose = TRUE
+          title = "Error",
+          "Dataframe not found, please CREATE instead",
+          footer = shiny::modalButton("OK")
         )
       )
-
-      shinycssloaders::showSpinner("mTable", {
-        Sys.sleep(2)
-      })
-
-      # Display measurements table
-      output$mTable <- DT::renderDataTable({
-        DT::datatable(dtfilter(measurements))
-      })
     }
   })
 
-  # Clear measurements
+  # File  block
+
+  # Image processing ----
+  shiny::observeEvent(input$file, {
+    req(input$file)
+    img <- imager::load.image(input$file$datapath)
+    rv$current_image <- img
+    rv$img_width <- width(img)
+    rv$img_height <- height(img)
+  })
+
+  # Crop  block
+
+  # Crop button logic
+  shiny::observeEvent(input$crop, {
+    req(input$file)
+    req(input$plot_brush)
+
+    # Set crop area
+
+    rv$plot_ranges_x <- c(input$plot_brush$xmin, input$plot_brush$xmax)
+    rv$plot_ranges_y <- c(input$plot_brush$ymax, input$plot_brush$ymin)
+
+    # Update states
+    rv$crop_status <- TRUE
+    updateActionButton(session, "crop", disabled = TRUE)
+  })
+
+  # UI feedback for crop state
+  output$crop_status <- shiny::renderUI({
+    req(input$file)
+    if (!rv$crop_status == TRUE) {
+      div(
+        class = "alert alert-info",
+        "Step 1: Select the area of interest on the image using the selection tool and click 'Crop'"
+      )
+    } else {
+      div(class = "alert alert-success",
+          "Area selected! You can now mark the measurement points.")
+    }
+  })
+
+  # Image plot  block
+
+  output$imagePlot <- shiny::renderPlot({
+    req(rv$current_image,
+        rv$segments)
+
+    if (rv$crop_status == TRUE) {
+
+      plot(
+        rv$current_image,
+        xlim = rv$plot_ranges_x,
+        ylim = rv$plot_ranges_y,
+        main = input$file$name,
+        axes = T
+      )
+
+      if (nrow(rv$length_measurements) > 0) {
+        points_df <- rv$length_measurements %>%
+          dplyr::mutate(
+            x_plot = rv$length_measurements$Length_X,
+            y_plot = rv$length_measurements$Length_Y
+          )
+        graphics::points(
+          points_df$x_plot,
+          points_df$y_plot,
+          col = "red",
+          cex = 1.5)
+      }
+
+      if (nrow(rv$width_measurements) > 0) {
+
+        points_df <- rv$width_measurements %>%
+          dplyr::mutate(
+            x_plot = rv$width_measurements$Width_X,
+            y_plot = rv$width_measurements$Width_Y
+          )
+        graphics::points(
+          points_df$x_plot,
+          points_df$y_plot,
+          col = "yellow",
+          pch = 4,
+          cex = 2
+        )
+      }
+
+      if (nrow(rv$fw_measurements) > 0) {
+
+        points_df <- rv$fw_measurements %>%
+          dplyr::mutate(
+            x_plot = rv$fw_measurements$Width_X,
+            y_plot = rv$fw_measurements$Width_Y
+          )
+
+        graphics::points(
+          points_df$x_plot,
+          points_df$y_plot,
+          col = "darkgreen",
+          pch = 4,
+          cex = 2
+        )
+
+        graphics::segments(rv$fw_measurements$Width_X[1],
+                           rv$fw_measurements$Width_Y[1],
+                           rv$fw_measurements$Width_X[2],
+                           rv$fw_measurements$Width_Y[2],
+                           col = "lightgreen",
+                           lwd = 1.5)
+      }
+
+      if (nrow(rv$length_measurements) == 3) {
+        draw_measurement_lines()
+      }
+    } else {
+      plot(rv$current_image, main = "Select area of interest", axes = T)
+    }
+  })
+  # Plot click  block
+
+  # Measurement handling ----
+  shiny::observeEvent(input$plot_click, {
+    req(input$crop,
+        rv$crop_status)
+
+    if (nrow(rv$length_measurements) != 3) {
+      rv$length_measurements <- rbind(
+        rv$length_measurements,
+        data.frame(
+          Length_X = input$plot_click$x,
+          Length_Y = input$plot_click$y
+        )
+      )
+      if (nrow(rv$length_measurements) == 3) {
+        show_measurement_modal("Length measurements completed. Take widths.")
+      }
+    } else {
+      handle_width_measurement(input$plot_click$x, input$plot_click$y)
+    }
+  })
+
+  # Clear  block
+
+  # Measurement Reset Warning
   shiny::observeEvent(input$clearBtn, {
-    measured_animals$length_measurement <- data.frame()
-    measured_animals$width_measurements <- data.frame()
-    shiny::updateTextInput(inputId = "comments",
-                           value = "")
-    shiny::updateTextInput(inputId = "ImageId",
-                           value = "")
-    shiny::updateRadioButtons(inputId = "score",
-                              selected = 4)
-    shiny::updateNumericInput(inputId = "alt",
-                              value = 20)
-    shiny::updateActionButton(inputId = "crop",
-                              disabled = F)
-    shiny::updateActionButton(inputId = "saveBtn",
-                              disabled = F)
-    ranges$x <- NULL
-    ranges$y <- NULL
+    shiny::showModal(
+      shiny::modalDialog(
+        title = "Confirm Reset",
+        "Are you sure you want to clear all current measurements?",
+        footer = tagList(
+          shiny::actionButton("confirm_reset", "Yes", class = "btn-danger"),
+          shiny::modalButton("Cancel")
+        )
+      )
+    )
   })
 
-  ###########################################
-  # Adding the model calibration data frame #
-  ###########################################
+  shiny::observeEvent(input$confirm_reset, {
+    rv$length_measurements <- data.frame()
+    rv$width_measurements <- data.frame()
+    # Novos dados
+    rv$new_id = character()
+    rv$new_score = "Not assigned"
+    rv$new_date = character()
+    rv$new_f_alt = numeric()
+    rv$new_calti = numeric()
+    rv$new_bl = numeric()
+    rv$new_widths = numeric()
+    rv$new_fw = numeric()
+    rv$crop_status = FALSE
+    shiny::updateActionButton(session, "crop", disabled = FALSE)
+    shiny::updateTextInput(inputId = "comments", value = "")
+    shiny::updateTextInput(inputId = "ImageId", value = "")
+    shiny::updateRadioButtons(inputId = "score", selected = 4)
+    shiny::updateNumericInput(inputId = "alt", value = 20)
+    rv$plot_ranges_x = NULL
+    rv$plot_ranges_y = NULL
 
+    shiny::removeModal()
+  })
+
+  # Calibration  block
+
+  # Refactored Calibration Handler
   shiny::observeEvent(input$calib, {
+    req(input$calib_path)
 
-    calib_path <- paste(input$calib_path,
-                        "/calib.xlsx",
-                        sep = "")
+    rv$calib_path <- input$calib_path
 
-    mdata <- calib(calib_path)
+    rv$calib_data <- calib(rv$calib_path)
 
-    mdata <- stats::na.omit(mdata)
+    calib <- stats::na.omit(rv$calib_data)
 
-    m1 <- stats::lm(eGSD ~ as.numeric(C_Alt), data = mdata)
+    m1 <- stats::lm(eGSD ~ as.numeric(C_Alt), data = calib)
 
-    train.control <- caret::trainControl(
-      method = "repeatedcv",
-      number = 10,
-      repeats = 5)
+    train.control <- caret::trainControl(method = "repeatedcv",
+                                         number = 10,
+                                         repeats = 5)
     # Train the model
-    model1 <- caret::train(
+    m1 <- caret::train(
       eGSD ~ as.numeric(C_Alt),
-      data = mdata,
+      data = calib,
       method = "lm",
       trControl = train.control
     )
 
-    mdata$cGSD <- stats::predict(model1, mdata)
+    rv$calib_model <- m1
 
-    mdata$LcGSD <- mdata$Pixel * mdata$cGSD
+    calib$cGSD <- stats::predict(m1, calib)
 
-    output$mplot <- shiny::renderPlot({
+    calib$LcGSD <- calib$Pixel * calib$cGSD
 
-      ggplot2::ggplot(mdata,
-                      ggplot2::aes(
-                        x = as.numeric(C_Alt),
-                        y = eGSD)) +
-        ggplot2::geom_point() +
-        ggplot2::geom_smooth(method = "lm",
-                             se = T) +
-        ggplot2::theme_classic()
-      })
+    rv$calib_data <- calib
 
-    output$checkm <- shiny::renderPlot({
+    # Save plots if requested
+    if (input$save_plot == "Y") {
+      save_calibration_plots(create_calibration_plots(rv$calib_data,
+                                                      rv$calib_model),
+                             rv$current_dir)
 
-      performance::check_model(
-        m1, check = c("linearity", "qq",
-                      "homogeneity", "outliers")
-        )
-      })
-
-    output$meanplot <- shiny::renderPlot({
-      mdata <- stats::na.omit(mdata)
-
-      pd <- ggplot2::position_dodge(0.1)
-
-      ggplot2::ggplot(mdata,
-                            ggplot2::aes(
-                              x = as.numeric(C_Alt),
-                              y = LcGSD)) +
-        ggplot2::stat_summary(
-          fun.data = "mean_sdl",
-          fun.args = list(mult = 1),
-          geom = "errorbar",
-          color = "black",
-          width = 0.1
-        ) +
-        ggplot2::stat_summary(fun = mean,
-                              geom = "point",
-                              color = "black") +
-        ggplot2::theme_classic(base_family = "serif",
-                               base_size = 14) +
-        ggplot2::ylab("Measurements (meters)") +
-        ggplot2::xlab("Altitude (m)") +
-        ggplot2::ggtitle(
-          "Mean and RMSE values estimated",
-          subtitle = paste(
-            "RMSE = ",
-            round(model1$results$RMSE, digits = 3),
-            "R² = ",
-            round(model1$results$Rsquared, digits = 3),
-            "MAE = ",
-            round(model1$results$MAE, digits = 3)
-          )
-        ) +
-        ggplot2::geom_hline(
-          ggplot2::aes(
-            yintercept = ObjLength / 100,
-            linetype = paste("Reference object ",
-                             ObjLength, " centimeters")
-          ),
-          colour = 'blue',
-          linewidth = 1
-        ) +
-        ggplot2::geom_hline(
-          ggplot2::aes(yintercept = mean(LcGSD),
-                       linetype = "Mean estimated length"),
-          colour = 'red',
-          linewidth = 1
-        ) +
-        ggplot2::scale_linetype_manual(
-          name = "Reference object",
-          values = c(2, 2),
-          guide = ggplot2::guide_legend(override.aes =
-                                          list(color = c("red", "blue")))
-        ) +
-        ggplot2::theme(
-          axis.text = ggplot2::element_text(size = 14),
-          legend.title = ggplot2::element_text(size = 14),
-          legend.position = "top"
-        )
-      })
-
-    if(input$save_plot == "Y"){
-
-      p1 <- ggplot2::ggplot(mdata,
-                            ggplot2::aes(
-                              x = as.numeric(C_Alt),
-                              y = eGSD)) +
-        ggplot2::geom_point() +
-        ggplot2::geom_smooth(method = "lm",
-                             se = T) +
-        ggplot2::theme_classic()
-
-      p2 <- performance::check_model(
-        m1, check = c("linearity", "qq",
-                      "homogeneity", "outliers"),
-        panel = T
-      )
-      setwd(cur_dir())
-      png("Diagnostic_plot.png",
-          width = 720, height = 480,
-          units = "px")
-      print(p2)
-      dev.off()
-      setwd(user_dir())
-
-      p3 <- ggplot2::ggplot(mdata,
-                            ggplot2::aes(
-                              x = as.numeric(C_Alt),
-                              y = LcGSD)) +
-        ggplot2::stat_summary(
-          fun.data = "mean_sdl",
-          fun.args = list(mult = 1),
-          geom = "errorbar",
-          color = "black",
-          width = 0.1
-        ) +
-        ggplot2::stat_summary(fun = mean,
-                              geom = "point",
-                              color = "black") +
-        ggplot2::theme_classic(base_family = "serif",
-                               base_size = 14) +
-        ggplot2::ylab("Measurements (meters)") +
-        ggplot2::xlab("Altitude (m)") +
-        ggplot2::ggtitle(
-          "Mean and RMSE values estimated",
-          subtitle = paste(
-            "RMSE = ",
-            round(model1$results$RMSE, digits = 3),
-            "R² = ",
-            round(model1$results$Rsquared, digits = 3),
-            "MAE = ",
-            round(model1$results$MAE, digits = 3)
-          )
-        ) +
-        ggplot2::geom_hline(
-          ggplot2::aes(
-            yintercept = ObjLength / 100,
-            linetype = paste("Reference object ",
-                             ObjLength, " centimeters")
-          ),
-          colour = 'blue',
-          linewidth = 1
-        ) +
-        ggplot2::geom_hline(
-          ggplot2::aes(yintercept = mean(LcGSD),
-                       linetype = "Mean estimated length"),
-          colour = 'red',
-          linewidth = 1
-        ) +
-        ggplot2::scale_linetype_manual(
-          name = "Reference object",
-          values = c(2, 2),
-          guide = ggplot2::guide_legend(override.aes =
-                                          list(color = c("red", "blue")))
-        ) +
-        ggplot2::theme(
-          axis.text = ggplot2::element_text(size = 14),
-          legend.title = ggplot2::element_text(size = 14),
-          legend.position = "top"
-        )
-
-      ggplot2::ggsave(filename = "Regression_plot.png",
-                      plot = p1,
-                      path = cur_dir()
-                      )
-
-      ggplot2::ggsave(filename = "Variance_plot.png",
-                      plot = p3,
-                      path = cur_dir()
-                      )
     }
 
-    file <- ifelse(input$segments == 1,
-                   "Measurements_10_1.xlsx",
-                   "Measurements_05_1.xlsx")
+    # Update measurements data
+    updated_measurements <- update_measurements(rv$calib_model,
+                                                rv$segments)
 
-    if (file %in% list.files(path = cur_dir())) {
-      m1 <- stats::lm(eGSD ~ as.numeric(C_Alt), data = mdata)
-
-      file_path <- paste(cur_dir(), file, sep = "/")
-
-      measurements <- readxl::read_xlsx(path = file_path, col_names = T)
-
-      measurements$cGSD <- stats::predict(m1, measurements)
-      measurements$EstLength <- measurements$cGSD * measurements$Pixel
-
-      measurements[, 11] <- round(measurements[, 11],
-                                  digits = 4)
-      measurements[, 12] <- round(measurements[, 12],
-                                  digits = 2)
-      measurements[, 15] <- round(measurements[, 15],
-                                  digits = 2)
-
-      writexl::write_xlsx(measurements, path = paste(
-        cur_dir(),
-        ifelse(
-          input$segments == 1,
-          "/Measurements_10_1.xlsx",
-          "/Measurements_05_1.xlsx"
-        ),
-        sep = ""
-      ))
-
-      # Display measurements table
-      output$mTable <- DT::renderDataTable({
-        file_path <- paste(
-          cur_dir(),
-          ifelse(
-            input$segments == 1,
-            "/Measurements_10_1.xlsx",
-            "/Measurements_05_1.xlsx"
-          ),
-          sep = ""
-        )
-
-        DT::datatable(measurements)
-      })
+    # Update data table if successful
+    if (!is.null(updated_measurements)) {
+      update_data_table(paths$secondary)
     }
   })
 
-  ########################
-  # Whales measured plot #
-  ########################
+  # Model plot  block
 
-  shiny::observeEvent(input$n_whales, {
-    if (input$n_whales != 0) {
-      file_path <- paste(
-        cur_dir(),
-        ifelse(
-          input$segments == 1,
-          "/Measurements_10_1.xlsx",
-          "/Measurements_05_1.xlsx"
-        ),
-        sep = ""
+  output$meanplot <- shiny::renderPlot({
+    req(input$calib, rv$calib_data, rv$calib_model)
+
+    ggplot2::ggplot(
+      as.data.frame(rv$calib_data),
+      ggplot2::aes(x = as.numeric(C_Alt), y = eGSD) +
+        ggplot2::geom_point() +
+        ggplot2::geom_smooth(method = "lm", se = TRUE) +
+        ggplot2::theme_classic() +
+        ggplot2::labs(x = "Altitude (m)", y = "eGSD")
+    )
+  })
+
+  output$checkm <- shiny::renderPlot({
+    req(input$calib, rv$calib_data, rv$calib_model)
+    performance::check_model(rv$calib_model,
+                             check = c("linearity", "qq", "homogeneity", "outliers"))
+  })
+
+  output$variance <- shiny::renderPlot({
+    req(input$calib, rv$calib_data, rv$calib_model)
+    ggplot2::ggplot(
+      as.data.frame(rv$calib_data),
+      ggplot2::aes(x = as.numeric(C_Alt), y = LcGSD) +
+        ggplot2::stat_summary(
+          fun.data = "mean_sdl",
+          fun.args = list(mult = 1),
+          geom = "errorbar",
+          color = "black",
+          width = 0.1
+        ) +
+        ggplot2::stat_summary(
+          fun = mean,
+          geom = "point",
+          color = "black"
+        ) +
+        ggplot2::theme_classic(base_family = "serif", base_size = 14) +
+        ggplot2::labs(x = "Altitude (m)", y = "Measurements (meters)") +
+        ggplot2::ggtitle(
+          "Mean and RMSE values estimated",
+          subtitle = sprintf(
+            "RMSE = %.3f, R² = %.3f, MAE = %.3f",
+            rv$calib_model$results$RMSE,
+            rv$calib_model$results$Rsquared,
+            rv$calib_model$results$MAE
+          )
+        ) +
+        ggplot2::geom_hline(
+          ggplot2::aes(
+            yintercept = unique(ObjLength) / 100,
+            linetype = paste("Reference object", unique(ObjLength), "centimeters")
+          ),
+          colour = 'blue',
+          linewidth = 1
+        ) +
+        ggplot2::geom_hline(
+          ggplot2::aes(yintercept = mean(LcGSD)),
+          colour = 'red',
+          linewidth = 1
+        ) +
+        ggplot2::scale_linetype_manual(
+          name = "Reference",
+          values = c(2, 2),
+          guide = ggplot2::guide_legend(override.aes = list(color = c("red", "blue")))
+        )
+    )
+  })
+
+  # Save  block
+
+  # Save system ----
+  shiny::observeEvent(input$saveBtn, {
+    req(rv$current_dir, rv$segments)
+    dir_path <- get_directory_path(input$segments, rv$current_dir)
+    paths <- get_file_paths(dir_path, input$segments)
+
+    # Calculate distances
+    width_points <- rv$width_measurements
+    distances <- sqrt(
+      (
+        rv$width_measurements$Width_X[seq(2, nrow(width_points), 2)] -
+          rv$width_measurements$Width_X[seq(3, nrow(width_points), 2)]
+      )^2 +
+        (
+          rv$width_measurements$Width_Y[seq(2, nrow(width_points), 2)] -
+            rv$width_measurements$Width_Y[seq(3, nrow(width_points), 2)]
+        )^2
+    )
+
+    # Create new data entry
+    new_entry <- data.frame(
+      Drone = input$drone,
+      Obs = input$obs,
+      Species = input$Species,
+      Date = input$Date,
+      Measured_Date = Sys.time(),
+      ID = input$ImageID,
+      Frame_Score = switch(
+        input$score,
+        "1" = "Good",
+        "2" = "Moderate",
+        "3" = "Bad",
+        "Not assigned"
+      ),
+      F_Alt = input$alt,
+      TO_Alt = input$takeof,
+      C_Alt = input$alt + input$takeof,
+      BL = sum(sqrt(
+        diff(rv$length_measurementsLength_X)^2 +
+          diff(rv$length_measurementsLength_Y)^2
+      )),
+      Comments = input$comments
+    )
+
+    # Add width measurements
+    if (input$segments == 1) {
+      new_entry[, 12:21] <- c(distances[1:9], distances[10])
+    } else {
+      new_entry[, 12:31] <- c(distances[1:19], distances[20])
+    }
+
+    # Save to file
+    measurements <- readxl::read_xlsx(paths$secondary)
+    measurements <- rbind(measurements, new_entry)
+
+    rv$main_data <- measurements
+
+    writexl::write_xlsx(measurements, paths$secondary)
+
+    shiny::showModal(
+      shiny::modalDialog(
+        title = "Saved",
+        "Measurements stored successfully",
+        footer = shiny::modalButton("OK")
       )
+    )
 
-      measurements <- readxl::read_excel(path = file_path, col_names = T)
+    update_data_table(paths$secondary)
+  })
 
-      c <- levels(as.factor(measurements$ID))
+  # Observe actions
 
-      c1 <- sum(measurements$ID %in% c[1:input$n_whales])
+  shiny::observe({
+    req(rv$current_image)
 
-      output$lplot <- shiny::renderPlot({
-        ggplot2::ggplot(measurements[1:c1, ],
-                        ggplot2::aes(
-                          x = Segments,
-                          y = Pixel,
-                          fill = ID
-                        )) +
-          ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8),
-                            show.legend = T) +
-          ggplot2::theme_classic()
-
-      })
-
-      output$mwhale <- shiny::renderPlot({
-        ggplot2::ggplot(measurements[1:c1, ],
-                        ggplot2::aes(
-                          x = Segments,
-                          y = EstLength,
-                          fill = ID
-                        )) +
-          ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8),
-                            show.legend = T) +
-          ggplot2::theme_bw()
-
-      })
+    if (nrow(rv$length_measurements) == 3) {
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Measurement Progress",
+          HTML(
+            "<b>Length measurement complete!</b><br>
+             Click along the perpendicular lines to measure widths."
+          ),
+          footer = shiny::modalButton("Continue"),
+          easyClose = TRUE
+        )
+      )
+    }
+    # Disable crop button when measurements started
+    if (nrow(rv$length_measurements) > 0) {
+      updateActionButton(session, "crop", disabled = TRUE)
+    } else {
+      updateActionButton(session, "crop", disabled = FALSE)
     }
   })
 

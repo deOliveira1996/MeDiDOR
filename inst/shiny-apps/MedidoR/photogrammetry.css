@@ -7572,4 +7572,28 @@ padding-inline:12px!important;
 	margin-bottom: 30px!important;
 }
 
+/* Alert styling */
+.alert-info {
+  background-color: #e6f3ff;
+  border-color: #b8daff;
+  color: #004085;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.alert-success {
+  background-color: #e6ffe6;
+  border-color: #b8ffb8;
+  color: #008500;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+/* Button spacing */
+.btn {
+  margin: 2px;
+}
+
 /*CUSTOM CSS by @mthesoliver*/

@@ -8,4 +8,6 @@ medidor()
 }
 \description{
 Opens a Shiny application developed to conduct aerial photogrammetry analysis. MedidoR allows you to extract and convert pixel measurements from aerial images collected of marine animals.
+
+Launches Shiny app for aerial photogrammetry analysis
 }
