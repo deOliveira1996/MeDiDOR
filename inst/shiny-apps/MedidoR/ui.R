@@ -277,9 +277,9 @@ ui <- shiny::fluidPage(
             ", have fun!"
           )
         ),
-
         shiny::tabPanel(
           "Image plot",
+          uiOutput("crop_status"),
           fluidRow(
             shiny::plotOutput(
               "imagePlot",
@@ -293,7 +293,7 @@ ui <- shiny::fluidPage(
                 clip = T
               )
             )),
-          uiOutput("crop_status"),
+          uiOutput("add_status"),
           # Modified button layout
           div(style = "margin-top: 20px;",
               shiny::actionButton("crop", "CROP", width = "32%"),

@@ -1,7 +1,7 @@
 Package: MedidoR
 Type: Package
 Title: Aerial Photogrammetry Analyses
-Version: 0.9.9.9000
+Version: 0.9.1.1
 Authors@R: c(person(given = "Lucas",
            family = "de Oliveira",
            role = "cre",
@@ -14,20 +14,22 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:
+    R (>= 4.1.0)
+Imports:
+    stats,
+    utils,
+    graphics,
     shiny,
-    tidyverse,
     htmltools,
     imager,
     performance,
     readxl,
     shinycssloaders,
     writexl,
-    magrittr,
     caret,
     DT,
-    R (>= 3.5.0)
-Imports:
-    stats,
-    utils,
-    graphics
-RoxygenNote: 7.3.1
+    dplyr,
+    tidyr,
+    tidyverse,
+    ggplot2
+RoxygenNote: 7.3.2

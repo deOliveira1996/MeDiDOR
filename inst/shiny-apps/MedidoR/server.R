@@ -1,36 +1,27 @@
-####
-# Functions
-####
-#' @importFrom caret trainControl train
-#' @importFrom DT renderDataTable datatable
-#' @importFrom ggplot2 ggplot aes geom_point geom_smooth theme_classic position_dodge stat_summary ylab xlab ggtitle geom_hline scale_linetype_manual guide_legend theme element_text geom_col theme_bw
-#' @importFrom graphics plot points segments
-#' @importFrom htmltools tagList
-#' @importFrom performance check_model
-#' @importFrom readxl read_xlsx read_excel
-#' @importFrom shiny reactiveValues observeEvent showModal modalDialog textInput actionButton modalButton reactiveVal removeModal req renderPlot reactiveFileReader updateTextInput updateRadioButtons updateNumericInput stopApp
-#' @importFrom shinycssloaders showSpinner
-#' @importFrom stats na.omit lm predict
-#' @importFrom writexl write_xlsx
-#' @importFrom tidyverse %>%
-#' @export
 
 options(shiny.maxRequestSize = 50 * 1024^2)
 
 # Define server
 server <- function(input, output, session) {
+
   # Reactive values ----
   rv <- shiny::reactiveValues(
     # Controle de segmentos
     segments = NULL,
 
     # Medições
-    length_measurements = data.frame(Length_X = numeric(), Length_Y = numeric()),
-    width_measurements = data.frame(Width_X = numeric(), Width_Y = numeric()),
-    fw_measurements = data.frame(Width_X = numeric(), Width_Y = numeric()),
+    length_measurements = data.frame(Length_X = numeric(),
+                                     Length_Y = numeric()),
+    width_measurements = data.frame(Width_X = numeric(),
+                                    Width_Y = numeric()),
+    fw_measurements = data.frame(Width_X = numeric(),
+                                 Width_Y = numeric()),
 
     # Dados principais
     main_data = NULL,
+    current_data = NULL,
+    main = NULL,
+    secondary = NULL,
 
     # Diretórios
     user_dir = getwd(),
@@ -46,10 +37,12 @@ server <- function(input, output, session) {
     new_bl = numeric(),
     new_widths = numeric(),
     new_fw = numeric(),
+    new_drone = character(),
 
     # Imagem
     current_image = NULL,
     crop_status = FALSE,
+    add_status = FALSE,
 
     # Dimensões e ranges
     img_width = 0,
@@ -63,171 +56,7 @@ server <- function(input, output, session) {
     calib_model = NULL
   )
 
-  observeEvent(input$segments, {
-    rv$segments <- input$segments
-  })
-
-  # Helper functions
-  handle_fluke_measurements <- function(x, y) {
-    if (nrow(rv$fw_measurements) < 2) {
-      rv$fw_measurements <- rbind(rv$fw_measurements, data.frame(Width_X = x, Width_Y = y))
-    }
-
-    if (nrow(rv$fw_measurements) == 2) {
-      show_measurement_modal("Measurements complete")
-      process_measurements()
-    }
-  }
-
-  handle_width_measurement <- function(x, y) {
-    target <- ifelse(input$segments == 1, 18, 38)
-
-    # Adiciona pontos apenas se ainda não atingiu o target
-    if (nrow(rv$width_measurements) < target) {
-      rv$width_measurements <- rbind(rv$width_measurements,
-                                     data.frame(Width_X = x, Width_Y = y))
-    }
-
-    # Mostra modal quando o target é atingido
-    if (nrow(rv$width_measurements) == target) {
-      show_measurement_modal("Width measurements completed. Take Fluke width.")
-    }
-  }
-
-  process_measurements <- function() {
-    coords <- rv$width_measurements
-
-    # Garantir que há um número par de pontos
-    if (nrow(coords) %% 2 != 0) {
-      showNotification("Número ímpar de pontos para larguras!", type = "error")
-      return()
-    }
-
-    # Criar pares consecutivos (1-2, 3-4, etc.)
-    pairs <- data.frame(
-      x1 = coords$Width_X[seq(1, nrow(coords) - 1, 2)],
-      # Índices ímpares (1,3,5...)
-      y1 = coords$Width_Y[seq(1, nrow(coords) - 1, 2)],
-      x2 = coords$Width_X[seq(2, nrow(coords), 2)],
-      # Índices pares (2,4,6...)
-      y2 = coords$Width_Y[seq(2, nrow(coords), 2)]
-    )
-
-    widths <- sqrt((pairs$x2 - pairs$x1)^2 + (pairs$y2 - pairs$y1)^2)
-    rv$new_widths <- widths[1:(length(widths))]
-    rv$new_fw <- sqrt((
-      rv$fw_measurements$Width_X[2] - rv$fw_measurements$Width_X[1]
-    )^2 + (
-      rv$fw_measurements$Width_Y[2] - rv$fw_measurements$Width_Y[1]
-    )^2
-    )
-    rv$new_id = input$ImageID
-    rv$new_date = input$Date
-    rv$new_f_alt = input$alt
-    rv$new_to_alt = input$takeof
-    rv$new_calti = input$alt + input$takeof
-    rv$new_bl = sum(sqrt(
-      diff(rv$length_measurements$Length_X)^2 +
-        diff(rv$length_measurements$Length_Y)^2
-    ))
-  }
-
-  create_new_entry <- function(segments) {
-    # Base columns
-    base_df <- data.frame(
-      Drone = input$drone,
-      Obs = input$obs,
-      Species = input$Species,
-      Date = rv$new_date,
-      Measured_Date = Sys.time(),
-      ID = rv$new_id,
-      Frame_Score = rv$new_score,
-      F_Alt = rv$new_f_alt,
-      TO_Alt = rv$new_to_alt,
-      C_Alt = rv$new_calti,
-      BL = rv$new_bl,
-      Comments = input$comments
-    )
-
-    # Width columns
-    if (segments == 1) {
-      widths <- setNames(as.list(rv$new_widths[1:9]), paste0("WD_", seq(10, 90, by = 10)))
-    } else {
-      widths <- setNames(as.list(rv$new_widths[1:19]), paste0("WD_", seq(5, 95, by = 5)))
-    }
-
-    # Add Fluke Width (WD_F)
-    widths$WD_F <- rv$new_fw
-
-    # Combine all columns
-    cbind(base_df, as.data.frame(widths))
-  }
-
-  # Measurement line drawer
-  draw_measurement_lines <- function() {
-    req(rv$current_image, rv$length_measurements, rv$segments)
-
-    lp <- rv$length_measurements
-    if (nrow(lp) < 3)
-      return()
-
-    start <- data.frame(x = lp$Length_X[1], y = lp$Length_Y[1])
-    mid <- data.frame(x = lp$Length_X[2], y = lp$Length_Y[2])
-    end <- data.frame(x = lp$Length_X[3], y = lp$Length_Y[3])
-
-    # Desenha linha principal
-    graphics::segments(start$x,
-                       start$y,
-                       mid$x,
-                       mid$y,
-                       col = "red",
-                       lwd = 1.5)
-
-    graphics::segments(mid$x,
-                       mid$y,
-                       end$x,
-                       end$y,
-                       col = "red",
-                       lwd = 1.5)
-
-    # Cálculo vetorial no sistema de coordenadas original
-    original_dx <- end$x - start$x
-    original_dy <- end$y - start$y
-    perpendicular <- c(-original_dy, original_dx) / sqrt(original_dx^2 + original_dy^2)
-
-    # Parâmetros dos intervalos
-    intervals <- ifelse(input$segments == 1, 9, 19)
-
-    total_length <- sum(sqrt(diff(lp$Length_X)^2 + diff(lp$Length_Y)^2))
-
-    for (i in 1:intervals) {
-      fraction <- i / (intervals + 1)
-
-      # Ponto na linha original
-      original_x <- start$x + original_dx * fraction
-      original_y <- start$y + original_dy * fraction
-
-      # Converte ponto central
-      center <- data.frame(x = original_x, y = original_y)
-
-      # Calcula extremidades da linha perpendicular
-      line_length <- total_length * 2
-      offset_x <- perpendicular[1] * line_length / 2
-      offset_y <- perpendicular[2] * line_length / 2
-
-      # Desenha linha perpendicular
-      graphics::segments(
-        center$x - offset_x,
-        center$y - offset_y,
-        center$x + offset_x,
-        center$y + offset_y,
-        col = "blue",
-        lty = "dashed"
-      )
-    }
-  }
-
-  # Path  block
+  ############################ Path  block ############################
 
   # Directory handling ----
   shiny::observeEvent(input$path, {
@@ -241,6 +70,11 @@ server <- function(input, output, session) {
         )
       )
     )
+  })
+
+  # Assign segments
+  observeEvent(input$segments, {
+    rv$segments <- input$segments
   })
 
   # Confirmation  block
@@ -258,29 +92,34 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$create, {
     req(rv$user_dir, rv$segments)
 
-    dir_path <- get_directory_path(rv$segments, rv$user_dir)
-    paths <- get_file_paths(dir_path, rv$segments)
+    dir_path <- MedidoR:::get_directory_path(rv$segments, rv$user_dir)
+    paths <- MedidoR:::get_file_paths(dir_path, rv$segments)
+
+    rv$main <- paths$main
+    rv$secondary <- paths$secondary
 
     if (!dir.exists(dir_path)) {
       dir.create(dir_path)
-      create_data(
+      MedidoR:::create_data(
         segments = rv$segments,
-        path = paths$main,
-        path2 = paths$secondary
+        path = rv$main,
+        path2 = rv$secondary
       )
       shiny::showModal(shiny::modalDialog(
         title = "Success",
         paste(
-          ifelse(input$segments == 1, "10%", "5%"),
+          ifelse(rv$segments == 1, "10%", "5%"),
           "interval dataframe created"
         ),
         footer = shiny::modalButton("OK")
       ))
 
-      rv$main_data <- readxl::read_xlsx(paths$secondary)
+      rv$current_dir <- dir_path
+
+      rv$main_data <- readxl::read_xlsx(path = rv$main, col_names = T)
 
       output$mTable <- DT::renderDataTable({
-        DT::datatable(readxl::read_xlsx(paths$secondary))
+        MedidoR:::update_data_table(rv$secondary)
       })
 
     } else {
@@ -298,11 +137,14 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$import, {
     req(rv$user_dir, rv$segments)
-    dir_path <- get_directory_path(rv$segments, rv$user_dir)
-    paths <- get_file_paths(dir_path, rv$segments)
+    dir_path <- MedidoR:::get_directory_path(rv$segments, rv$user_dir)
+    paths <- MedidoR:::get_file_paths(dir_path, rv$segments)
 
-    if (file.exists(paths$secondary)) {
-      rv$main_data <- readxl::read_xlsx(paths$secondary)
+    rv$main <- paths$main
+    rv$secondary <- paths$secondary
+
+    if (file.exists(rv$secondary)) {
+      rv$main_data <- readxl::read_xlsx(rv$main)
 
       shiny::showModal(
         shiny::modalDialog(
@@ -311,8 +153,9 @@ server <- function(input, output, session) {
           footer = shiny::modalButton("OK")
         )
       )
+
       output$mTable <- DT::renderDataTable({
-        DT::datatable(readxl::read_xlsx(paths$secondary))
+        MedidoR:::update_data_table(rv$secondary)
       })
 
     } else {
@@ -326,15 +169,15 @@ server <- function(input, output, session) {
     }
   })
 
-  # File  block
+  ############################ Image block ############################
 
   # Image processing ----
   shiny::observeEvent(input$file, {
     req(input$file)
     img <- imager::load.image(input$file$datapath)
     rv$current_image <- img
-    rv$img_width <- width(img)
-    rv$img_height <- height(img)
+    rv$img_width <- imager::width(img)
+    rv$img_height <- imager::height(img)
   })
 
   # Crop  block
@@ -351,7 +194,7 @@ server <- function(input, output, session) {
 
     # Update states
     rv$crop_status <- TRUE
-    updateActionButton(session, "crop", disabled = TRUE)
+    shiny::updateActionButton(session, "crop", disabled = TRUE)
   })
 
   # UI feedback for crop state
@@ -364,12 +207,139 @@ server <- function(input, output, session) {
       )
     } else {
       div(class = "alert alert-success",
-          "Area selected! You can now mark the measurement points.")
+          "Area selected!")
     }
   })
 
-  # Image plot  block
+  ############################ Image plot  block ############################
 
+  # Measurement line drawer functions
+
+  process_measurements <- function() {
+    coords <- rv$width_measurements
+
+    # Garantir que há um número par de pontos
+    if (nrow(coords) %% 2 != 0) {
+      showNotification("Odd number of stitches for widths!", type = "error")
+      return()
+    }
+
+    # Criar pares consecutivos (1-2, 3-4, etc.)
+    pairs <- data.frame(
+      x1 = coords$Width_X[seq(1, nrow(coords) - 1, 2)],
+      # Índices ímpares (1,3,5...)
+      y1 = coords$Width_Y[seq(1, nrow(coords) - 1, 2)],
+      x2 = coords$Width_X[seq(2, nrow(coords), 2)],
+      # Índices pares (2,4,6...)
+      y2 = coords$Width_Y[seq(2, nrow(coords), 2)]
+    )
+
+    widths <- sqrt((pairs$x2 - pairs$x1)^2 + (pairs$y2 - pairs$y1)^2)
+    rv$new_widths <- widths[1:(length(widths))]
+    rv$new_fw <- as.numeric(sqrt((rv$fw_measurements$Width_X[2] - rv$fw_measurements$Width_X[1])^2 + (rv$fw_measurements$Width_Y[2] - rv$fw_measurements$Width_Y[1])^2))
+    rv$new_id = input$ImageID
+    rv$new_date = input$Date
+    rv$new_f_alt = input$alt
+    rv$new_to_alt = input$takeof
+    rv$new_calti = input$alt + input$takeof
+    rv$new_bl = sum(sqrt(
+      diff(rv$length_measurements$Length_X)^2 +
+        diff(rv$length_measurements$Length_Y)^2
+    ))
+  }
+
+  #  Length measurements
+  draw_measurement_lines <- function() {
+    req(rv$current_image, rv$length_measurements, rv$segments)
+
+    lp <- rv$length_measurements
+    if (nrow(lp) < 3)
+      return()
+
+    start <- data.frame(x = lp$Length_X[1], y = lp$Length_Y[1])
+    mid <- data.frame(x = lp$Length_X[2], y = lp$Length_Y[2])
+    end <- data.frame(x = lp$Length_X[3], y = lp$Length_Y[3])
+
+    # Main lines
+    graphics::segments(start$x,
+                       start$y,
+                       mid$x,
+                       mid$y,
+                       col = "red",
+                       lwd = 1.5)
+
+    graphics::segments(mid$x,
+                       mid$y,
+                       end$x,
+                       end$y,
+                       col = "red",
+                       lwd = 1.5)
+
+    # Vectorial calculations
+    original_dx <- end$x - start$x
+    original_dy <- end$y - start$y
+    perpendicular <- c(-original_dy, original_dx) / sqrt(original_dx^2 + original_dy^2)
+
+    # Interval parameters
+    intervals <- ifelse(rv$segments == 1, 9, 19)
+
+    total_length <- sum(sqrt(diff(lp$Length_X)^2 + diff(lp$Length_Y)^2))
+
+    for (i in 1:intervals) {
+      fraction <- i / (intervals + 1)
+
+      # Main line point
+      original_x <- start$x + original_dx * fraction
+      original_y <- start$y + original_dy * fraction
+
+      # Central point convert
+      center <- data.frame(x = original_x, y = original_y)
+
+      # Calcs perpendicular summ
+      line_length <- total_length * 2
+      offset_x <- perpendicular[1] * line_length / 2
+      offset_y <- perpendicular[2] * line_length / 2
+
+      # Draw perpendicular lines
+      graphics::segments(
+        center$x - offset_x,
+        center$y - offset_y,
+        center$x + offset_x,
+        center$y + offset_y,
+        col = "blue",
+        lty = "dashed"
+      )
+    }
+  }
+
+  # Width measurements
+  handle_width_measurement <- function(x, y) {
+    target <- ifelse(rv$segments == 1, 18, 38)
+
+    if (nrow(rv$width_measurements) < target) {
+      rv$width_measurements <- rbind(rv$width_measurements,
+                                     data.frame(Width_X = x, Width_Y = y))
+    }
+
+    if (nrow(rv$width_measurements) == target) {
+      MedidoR:::show_measurement_modal("Width measurements completed. Take Fluke width.")
+    }
+  }
+
+  # Fluke measurements
+  handle_fluke_measurements <- function(x, y) {
+    if (nrow(rv$fw_measurements) < 2) {
+      rv$fw_measurements <- rbind(rv$fw_measurements,
+                                  data.frame(Width_X = x, Width_Y = y))
+    }
+
+    if (nrow(rv$fw_measurements) == 2) {
+      MedidoR:::show_measurement_modal("Measurements complete")
+      process_measurements()
+    }
+  }
+
+  # Rendering plot
   output$imagePlot <- shiny::renderPlot({
     req(rv$current_image, rv$segments)
 
@@ -383,7 +353,7 @@ server <- function(input, output, session) {
       )
 
       if (nrow(rv$length_measurements) > 0) {
-        points_df <- rv$length_measurements %>%
+        points_df <- rv$length_measurements |>
           dplyr::mutate(
             x_plot = rv$length_measurements$Length_X,
             y_plot = rv$length_measurements$Length_Y
@@ -395,7 +365,7 @@ server <- function(input, output, session) {
       }
 
       if (nrow(rv$width_measurements) > 0) {
-        points_df <- rv$width_measurements %>%
+        points_df <- rv$width_measurements |>
           dplyr::mutate(
             x_plot = rv$width_measurements$Width_X,
             y_plot = rv$width_measurements$Width_Y
@@ -410,7 +380,7 @@ server <- function(input, output, session) {
       }
 
       if (nrow(rv$fw_measurements) > 0) {
-        points_df <- rv$fw_measurements %>%
+        points_df <- rv$fw_measurements |>
           dplyr::mutate(
             x_plot = rv$fw_measurements$Width_X,
             y_plot = rv$fw_measurements$Width_Y
@@ -419,7 +389,7 @@ server <- function(input, output, session) {
         graphics::points(
           points_df$x_plot,
           points_df$y_plot,
-          col = "purple4",
+          col = "purple3",
           pch = 4,
           cex = 2
         )
@@ -441,8 +411,8 @@ server <- function(input, output, session) {
       plot(rv$current_image, main = "Select area of interest", axes = T)
     }
   })
-  # Plot click  block
 
+  ############################ Plot click  block ############################
   # Measurement handling ----
   shiny::observeEvent(input$plot_click, {
     req(input$crop, rv$crop_status)
@@ -456,10 +426,10 @@ server <- function(input, output, session) {
         )
       )
       if (nrow(rv$length_measurements) == 3) {
-        show_measurement_modal("Length measurements completed. Take widths.")
+        MedidoR:::show_measurement_modal("Length measurements completed. Take widths.")
       }
     } else {
-      target <- ifelse(input$segments == 1, 18, 38)
+      target <- ifelse(rv$segments == 1, 18, 38)
       if (nrow(rv$width_measurements) < target) {
         handle_width_measurement(input$plot_click$x, input$plot_click$y)
       } else {
@@ -468,29 +438,94 @@ server <- function(input, output, session) {
     }
   })
 
-  # Save  block
+  shiny::observe({
+    req(rv$current_image)
 
-  # Save system ----
-  shiny::observeEvent(input$saveBtn, {
-    req(rv$current_dir, rv$segments)
-    req(rv$new_widths, rv$new_fw)
+    if (nrow(rv$length_measurements) == 3) {
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Measurement Progress",
+          HTML(
+            "<b>Length measurement complete!</b><br>
+             Click along the perpendicular lines to measure widths."
+          ),
+          footer = shiny::modalButton("Continue"),
+          easyClose = TRUE
+        )
+      )
+    }
+    # Disable crop button when measurements started
+    if (nrow(rv$length_measurements) > 0) {
+      shiny::updateActionButton(session, "crop", disabled = TRUE)
+    } else {
+      shiny::updateActionButton(session, "crop", disabled = FALSE)
+    }
+  })
 
-    dir_path <- get_directory_path(rv$segments, rv$current_dir)
-    paths <- get_file_paths(dir_path, input$segments)
+  ############################ Save  block ############################
 
-    # Criar nova entrada
-    new_entry <- create_new_entry(input$segments)
+  # Create New Entry function
+  create_new_entry <- function(segments) {
+    req(input$drone, input$obs, input$Species,
+        rv$new_date, rv$new_id)
 
-    # Carregar e salvar dados
+    base_df <- data.frame(
+      Drone = as.character(input$drone),
+      Obs = as.character(input$obs),
+      Species = as.character(input$Species),
+      Date = as.character(rv$new_date),
+      Measured_Date = format(as.POSIXct(Sys.time()),
+                             "%Y-%m-%d %H:%M:%S"),
+      ID = as.character(rv$new_id),
+      Frame_Score = as.character(input$score),
+      F_Alt = as.numeric(rv$new_f_alt),
+      TO_Alt = as.numeric(rv$new_to_alt),
+      C_Alt = as.numeric(rv$new_calti),
+      cGSD = NA_real_,
+      EstLength = NA_real_,
+      Comments = as.character(input$comments),
+      BL = as.numeric(rv$new_bl)
+    )
+
+    # Width columns
+    if (segments == 1) {
+      widths <- setNames(as.list(rv$new_widths[1:9]),
+                         paste0("WD_", seq(10, 90, by = 10)))
+    } else {
+      widths <- setNames(as.list(rv$new_widths[1:19]),
+                         paste0("WD_", seq(5, 95, by = 5)))
+    }
+
+    widths <- lapply(widths, as.numeric)
+
+    # Add Fluke Width (WD_F)
+    widths$WD_F <- rv$new_fw
+
+    # Combine all columns
+    new_entry <- cbind(base_df, as.data.frame(widths))
+
+    return(new_entry)
+  }
+
+  # Save data function
+  save_data <- function(new_entry) {
     tryCatch({
-      if (file.exists(paths$secondary)) {
-        measurements <- readxl::read_xlsx(paths$secondary)
-      } else {
-        measurements <- data.frame()
-      }
 
-      measurements <- dplyr::bind_rows(measurements, new_entry)
-      writexl::write_xlsx(measurements, paths$secondary)
+      rv$main_data <- rv$main_data |>
+        dplyr::mutate(
+          dplyr::across(c(F_Alt, TO_Alt, C_Alt, BL, starts_with("WD_"),
+                          cGSD, EstLength), as.numeric),
+          dplyr::across(c(Drone, Obs, Species, Date, Measured_Date, ID,
+                          Frame_Score, Comments), as.character)
+        )
+
+      rv$current_data <- dplyr::bind_rows(rv$main_data, new_entry)
+
+      writexl::write_xlsx(rv$current_data, rv$main)
+
+      filtered_data <- dtfilter(rv$current_data)
+
+      writexl::write_xlsx(x = filtered_data, path = rv$secondary)
 
       shiny::showModal(
         modalDialog(
@@ -499,10 +534,41 @@ server <- function(input, output, session) {
           footer = modalButton("OK")
         )
       )
-
+      rv$add_status <- TRUE
+      shiny::updateActionButton(session, "saveBtn", disabled = TRUE)
+      return(TRUE)
     }, error = function(e) {
-      shiny::showNotification(paste("Error saving:", e$message), type = "error")
+      showNotification(paste("Error when saving:", e$message), type = "error")
+      return(FALSE)
     })
+  }
+
+  # Save system ----
+  shiny::observeEvent(input$saveBtn, {
+    req(rv$main_data, rv$new_fw)
+
+    # Criar nova entrada
+    new_entry <- create_new_entry(rv$segments)
+
+    save_data(new_entry = new_entry)
+
+    output$mTable <- DT::renderDataTable({
+      MedidoR:::update_data_table(rv$secondary)
+    })
+  })
+
+  # UI feedback for add state
+  output$add_status <- shiny::renderUI({
+    req(input$file)
+    if (!rv$add_status == TRUE) {
+      div(
+        class = "alert alert-info",
+        "Step 2: After completing the measurements, click on 'Add-IN button' to save"
+      )
+    } else {
+      div(class = "alert alert-success",
+          "The measurements have been saved!")
+    }
   })
 
   # Clear  block
@@ -534,6 +600,7 @@ server <- function(input, output, session) {
     rv$new_widths = numeric()
     rv$new_fw = numeric()
     rv$crop_status = FALSE
+    rv$add_status = FALSE
     shiny::updateActionButton(session, "crop", disabled = FALSE)
     shiny::updateTextInput(inputId = "comments", value = "")
     shiny::updateTextInput(inputId = "ImageId", value = "")
@@ -547,24 +614,27 @@ server <- function(input, output, session) {
 
   # Calibration  block
 
-  # Refactored Calibration Handler
+  # Re factored Calibration Handler
   shiny::observeEvent(input$calib, {
     req(input$calib_path)
 
-    rv$calib_path <- input$calib_path
+    if(!file.exists(input$calib_path)) {
+      showNotification("Calibration file not found", type = "error")
+      return()
+    }
 
-    rv$calib_data <- calib(rv$calib_path)
+    rv$calib_data <- MedidoR:::calib(rv$calib_path)
 
     calib <- stats::na.omit(rv$calib_data)
 
-    m1 <- stats::lm(eGSD ~ as.numeric(C_Alt), data = calib)
+    m1 <- stats::lm(as.numeric(eGSD) ~ as.numeric(C_Alt), data = calib)
 
     train.control <- caret::trainControl(method = "repeatedcv",
                                          number = 10,
                                          repeats = 5)
     # Train the model
     m1 <- caret::train(
-      eGSD ~ as.numeric(C_Alt),
+      as.numeric(eGSD) ~ as.numeric(C_Alt),
       data = calib,
       method = "lm",
       trControl = train.control
@@ -574,23 +644,38 @@ server <- function(input, output, session) {
 
     calib$cGSD <- stats::predict(m1, calib)
 
-    calib$LcGSD <- calib$Pixel * calib$cGSD
+    calib$LcGSD <- as.numeric(calib$Pixel ) * as.numeric(calib$cGSD)
 
     rv$calib_data <- calib
 
+    # Verificar R² mínimo aceitável
+    if(rv$calib_model$results$Rsquared < 0.7) {
+      showModal(modalDialog(
+        title = "Aviso",
+        "Modelo de calibração com R² baixo. Deseja continuar?",
+        footer = tagList(
+          actionButton("force_calib", "Continuar"),
+          modalButton("Cancelar")
+        )
+      ))
+    }
+
     # Save plots if requested
     if (input$save_plot == "Y") {
-      save_calibration_plots(create_calibration_plots(rv$calib_data, rv$calib_model),
-                             rv$current_dir)
-
+      MedidoR:::save_calibration_plots(
+        MedidoR:::create_calibration_plots(rv$calib_data,
+                                           rv$calib_model),
+        rv$current_dir)
     }
 
     # Update measurements data
-    updated_measurements <- update_measurements(rv$calib_model, rv$segments)
+    updated_measurements <- MedidoR:::update_measurements(rv$calib_model, rv$segments)
 
     # Update data table if successful
     if (!is.null(updated_measurements)) {
-      update_data_table(paths$secondary)
+      output$mTable <- DT::renderDataTable({
+        MedidoR:::update_data_table(paths$secondary)
+      })
     }
   })
 
@@ -662,31 +747,6 @@ server <- function(input, output, session) {
           guide = ggplot2::guide_legend(override.aes = list(color = c("red", "blue")))
         )
     )
-  })
-  # Observe actions
-
-  shiny::observe({
-    req(rv$current_image)
-
-    if (nrow(rv$length_measurements) == 3) {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Measurement Progress",
-          HTML(
-            "<b>Length measurement complete!</b><br>
-             Click along the perpendicular lines to measure widths."
-          ),
-          footer = shiny::modalButton("Continue"),
-          easyClose = TRUE
-        )
-      )
-    }
-    # Disable crop button when measurements started
-    if (nrow(rv$length_measurements) > 0) {
-      updateActionButton(session, "crop", disabled = TRUE)
-    } else {
-      updateActionButton(session, "crop", disabled = FALSE)
-    }
   })
 
   ################

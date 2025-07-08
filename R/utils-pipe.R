@@ -1,11 +1,11 @@
+
 #' @title dtfilter
 #' @importFrom tidyr gather
 #' @importFrom dplyr arrange
-#' @keywords internal
 #' @export
 
 dtfilter <- function(x) {
-  x <- x %>%
+  x <- x |>
     tidyr::gather(
       key = "Segments",
       value = "Pixel",
@@ -24,14 +24,14 @@ dtfilter <- function(x) {
         Drone,
         Date
       )
-    ) %>%
+    ) |>
     dplyr::arrange(by_group = ID)
   return(x)
 } # Function to filter the data for the data.table output
 
 #' @title Generate modal dialog
+#' @importFrom shiny showModal modalDialog
 #' @keywords internal
-#' @export
 
 # Helper functions ----
 show_measurement_modal <- function(message) {
@@ -45,42 +45,34 @@ show_measurement_modal <- function(message) {
   )
 }
 
-#' @title Save the data in user path
-#' @keywords internal
-#' @export
-
-save_data <- function(new_entry, paths) {
-  full_path <- file.path(rv$current_dir, paths$main)
-  current_data <- readxl::read_xlsx(full_path)
-  updated_data <- rbind(current_data, new_entry)
-  writexl::write_xlsx(updated_data, full_path)
-  writexl::write_xlsx(dtfilter(updated_data),
-                      file.path(rv$current_dir, paths$filtered))
-}
-
 #' @title Update the data table in UI
+#' @importFrom DT datatable
 #' @keywords internal
-#' @export
 
 update_data_table <- function(path) {
-  output$mTable <- DT::renderDataTable({
-    DT::datatable(readxl::read_xlsx(path))
-  })
+  if(file.exists(path)) {
+    DT::datatable(
+      readxl::read_xlsx(path),
+      options = list(
+        pageLength = 11,
+        autoWidth = TRUE,
+        serverSide = TRUE
+      )
+    )
+  }
 }
 
 #' @title Get the directory paths
 #' @keywords internal
-#' @export
 
 # Unified directory handler
 get_directory_path <- function(segments, user_dir) {
   dir_name <- ifelse(segments == 1, "10%_interval", "05%_interval")
-  file.path(user_dir, dir_name)
+  normalizePath(file.path(user_dir, dir_name), mustWork = FALSE)
 }
 
 #' @title Generate the file paths for data
 #' @keywords internal
-#' @export
 
 # Unified file path generator
 get_file_paths <- function(dir_path, segments) {
@@ -93,24 +85,24 @@ get_file_paths <- function(dir_path, segments) {
 
 #' @title Update the data with calibration model estimates
 #' @keywords internal
-#' @export
+#' @importFrom writexl write_xlsx
+#' @importFrom readxl read_xlsx
+#' @importFrom dplyr mutate across
 
 # Update measurements with model predictions
 update_measurements <- function(model, segments) {
-  file_name <- ifelse(segments == 1,
-                      "Measurements_10_1.xlsx",
-                      "Measurements_05_1.xlsx")
-  file_path <- file.path(rv$current_dir, file_name)
+
+  file_path <- file.path(rv$secondary)
 
   if (file.exists(file_path)) {
     measurements <- readxl::read_xlsx(file_path)
     measurements$cGSD <- stats::predict(model, measurements)
-    measurements$EstLength <- measurements$cGSD * measurements$Pixel
+    measurements$EstLength <- as.numeric(measurements$cGSD) * as.numeric(measurements$Pixel)
 
     # Apply rounding
-    measurements <- measurements %>%
+    measurements <- measurements |>
       dplyr::mutate(
-        dplyr::across(c(11, 15), ~ round(., 4)),
+        dplyr::across(c(11, 15), ~ round(., 2)),
         dplyr::across(12, ~ round(., 2))
       )
 
@@ -122,7 +114,7 @@ update_measurements <- function(model, segments) {
 
 #' @title Save the calibration plots
 #' @keywords internal
-#' @export
+#' @importFrom ggplot2 ggsave
 
 # Helper to save plots
 save_calibration_plots <- function(plots, save_dir) {
@@ -150,4 +142,64 @@ save_calibration_plots <- function(plots, save_dir) {
     units = "px"
   )
   grDevices::dev.off()
+}
+
+#' @title Import calibration data
+#' @importFrom readxl read_excel
+#' @importFrom dplyr select mutate across
+#' @import tidyverse
+
+
+calib <- function(file = "") {
+  readxl::read_excel(file) |>
+    dplyr::select(Date, Pixel, ObjLength,
+                  GPSAlt, TO_Alt) |>
+    dplyr::mutate(
+      Date = as.factor(Date),
+      across(c(Pixel, ObjLength, GPSAlt, TO_Alt), as.numeric),
+      C_Alt = GPSAlt + TO_Alt,
+      eGSD = round((ObjLength/100)/Pixel, 4)
+    )
+}
+
+#' @title Create measurement template
+#' @description Generates interval measurement templates
+#' @importFrom writexl write_xlsx
+#' @keywords internal
+
+create_data <- function(segments, path, path2) {
+  if(segments == 1) {
+    dt <- data.frame(
+      Drone = character(0), Obs = character(0), Species = character(0),
+      Date = character(0), Measured_Date = character(0), ID = character(0),
+      Frame_Score = character(0), F_Alt = numeric(0), TO_Alt = numeric(0),
+      C_Alt = numeric(0), BL = numeric(0),
+      WD_10 = numeric(0), WD_20 = numeric(0), WD_30 = numeric(0),
+      WD_40 = numeric(0), WD_50 = numeric(0), WD_60 = numeric(0),
+      WD_70 = numeric(0), WD_80 = numeric(0), WD_90 = numeric(0),
+      WD_F = numeric(0), cGSD = numeric(0), EstLength = numeric(0),
+      Comments = character(0)
+    )
+    writexl::write_xlsx(dt, path)
+    writexl::write_xlsx(dtfilter(dt), path2)
+
+  } else {
+    dt <- data.frame(
+      Drone = character(0), Obs = character(0), Species = character(0),
+      Date = character(0), Measured_Date = character(0), ID = character(0),
+      Frame_Score = character(0), F_Alt = numeric(0), TO_Alt = numeric(0),
+      C_Alt = numeric(0), BL = numeric(0),
+      WD_05 = numeric(0), WD_10 = numeric(0), WD_15 = numeric(0),
+      WD_20 = numeric(0), WD_25 = numeric(0), WD_30 = numeric(0),
+      WD_35 = numeric(0), WD_40 = numeric(0), WD_45 = numeric(0),
+      WD_50 = numeric(0), WD_55 = numeric(0), WD_60 = numeric(0),
+      WD_65 = numeric(0), WD_70 = numeric(0), WD_75 = numeric(0),
+      WD_80 = numeric(0), WD_85 = numeric(0), WD_90 = numeric(0),
+      WD_95 = numeric(0), WD_F = numeric(0), cGSD = numeric(0),
+      EstLength = numeric(0), Comments = character(0)
+    )
+    writexl::write_xlsx(dt, path)
+    writexl::write_xlsx(dtfilter(dt), path2)
+
+  }
 }
