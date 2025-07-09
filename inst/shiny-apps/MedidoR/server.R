@@ -42,7 +42,8 @@ server <- function(input, output, session) {
     # Imagem
     current_image = NULL,
     crop_status = FALSE,
-    add_status = FALSE,
+    add_status = TRUE,
+    click_save = FALSE,
 
     # Dimensões e ranges
     img_width = 0,
@@ -336,6 +337,7 @@ server <- function(input, output, session) {
     if (nrow(rv$fw_measurements) == 2) {
       MedidoR:::show_measurement_modal("Measurements complete")
       process_measurements()
+      rv$add_status <- FALSE
     }
   }
 
@@ -454,11 +456,17 @@ server <- function(input, output, session) {
         )
       )
     }
-    # Disable crop button when measurements started
+
     if (nrow(rv$length_measurements) > 0) {
       shiny::updateActionButton(session, "crop", disabled = TRUE)
     } else {
       shiny::updateActionButton(session, "crop", disabled = FALSE)
+    }
+
+    if (rv$add_status == TRUE) {
+      shiny::updateActionButton(session, "saveBtn", disabled = TRUE)
+    } else {
+      shiny::updateActionButton(session, "saveBtn", disabled = FALSE)
     }
   })
 
@@ -534,8 +542,6 @@ server <- function(input, output, session) {
           footer = modalButton("OK")
         )
       )
-      rv$add_status <- TRUE
-      shiny::updateActionButton(session, "saveBtn", disabled = TRUE)
       return(TRUE)
     }, error = function(e) {
       showNotification(paste("Error when saving:", e$message), type = "error")
@@ -552,6 +558,9 @@ server <- function(input, output, session) {
 
     save_data(new_entry = new_entry)
 
+    rv$click_save <- TRUE
+    rv$add_status <- TRUE
+
     output$mTable <- DT::renderDataTable({
       MedidoR:::update_data_table(rv$secondary)
     })
@@ -560,7 +569,7 @@ server <- function(input, output, session) {
   # UI feedback for add state
   output$add_status <- shiny::renderUI({
     req(input$file)
-    if (!rv$add_status == TRUE) {
+    if (rv$click_save == FALSE) {
       div(
         class = "alert alert-info",
         "Step 2: After completing the measurements, click on 'Add-IN button' to save"
@@ -600,8 +609,9 @@ server <- function(input, output, session) {
     rv$new_widths = numeric()
     rv$new_fw = numeric()
     rv$crop_status = FALSE
-    rv$add_status = FALSE
+    rv$add_status = TRUE
     shiny::updateActionButton(session, "crop", disabled = FALSE)
+    shiny::updateActionButton(session, "saveBtn", disabled = TRUE)
     shiny::updateTextInput(inputId = "comments", value = "")
     shiny::updateTextInput(inputId = "ImageId", value = "")
     shiny::updateRadioButtons(inputId = "score", selected = 4)
