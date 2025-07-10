@@ -25,7 +25,7 @@ dtfilter <- function(x) {
         Date
       )
     ) |>
-    dplyr::arrange(Segments, by_group = ID)
+    dplyr::arrange(Measured_Date, by_group = ID)
   return(x)
 } # Function to filter the data for the data.table output
 
@@ -90,58 +90,43 @@ get_file_paths <- function(dir_path, segments) {
 #' @importFrom dplyr mutate across
 
 # Update measurements with model predictions
-update_measurements <- function(model, segments) {
+update_measurements <- function(main_path, secondary_path,
+                                model, calib_data,
+                                current_data = NULL) {
+  if (file.exists(main_path)) {
+    if (is.null(current_data)) {
+      current_data <- readxl::read_xlsx(main_path)
+      current_data_1 <- dtfilter(current_data)
+    }
 
-  file_path <- file.path(rv$secondary)
+    current_data_1$cGSD <- stats::predict(model, current_data_1)
+    current_data_1$EstLength <- current_data_1$cGSD * current_data_1$Pixel
 
-  if (file.exists(file_path)) {
-    measurements <- readxl::read_xlsx(file_path)
-    measurements$cGSD <- stats::predict(model, measurements)
-    measurements$EstLength <- as.numeric(measurements$cGSD) * as.numeric(measurements$Pixel)
+    fill_data <- current_data_1 |>
+      dplyr::group_by(ID) |>
+      dplyr::filter(Segments == "BL") |>
+      dplyr::summarise(cGSD = dplyr::first(cGSD),
+                       EstLength = dplyr::first(EstLength))
 
-    # Apply rounding
-    measurements <- measurements |>
+    current_data <- current_data |>
+      dplyr::select(-cGSD, -EstLength) |>
+      dplyr::left_join(fill_data, by = "ID")
+
+    # Filtrar e arredondar
+    measurements_1 <- current_data_1 |>
       dplyr::mutate(
-        dplyr::across(c(11, 15), ~ round(., 2)),
-        dplyr::across(12, ~ round(., 2))
+        dplyr::across(c(8:12), ~ round(., 2)),
+        dplyr::across(15, ~ round(., 2))
       )
 
-    writexl::write_xlsx(measurements, file_path)
-    return(measurements)
+    writexl::write_xlsx(x = current_data, path = main_path,
+                        col_names = TRUE)
+    writexl::write_xlsx(x = measurements_1, path = secondary_path,
+                        col_names = TRUE)
+
+    return(current_data)
   }
   return(NULL)
-}
-
-#' @title Save the calibration plots
-#' @keywords internal
-#' @importFrom ggplot2 ggsave
-
-# Helper to save plots
-save_calibration_plots <- function(plots, save_dir) {
-  ggplot2::ggsave(
-    filename = "Regression_plot.png",
-    plot = plots$regression,
-    path = save_dir,
-    width = 10,
-    height = 6
-  )
-
-  ggplot2::ggsave(
-    filename = "Variance_plot.png",
-    plot = plots$variance,
-    path = save_dir,
-    width = 10,
-    height = 6
-  )
-
-  print(plots$diagnostic)
-  grDevices::png(
-    file.path(save_dir, "Diagnostic_plot.png"),
-    width = 720,
-    height = 480,
-    units = "px"
-  )
-  grDevices::dev.off()
 }
 
 #' @title Import calibration data
@@ -156,7 +141,8 @@ calib <- function(file = "") {
                   GPSAlt, TO_Alt) |>
     dplyr::mutate(
       Date = as.factor(Date),
-      across(c(Pixel, ObjLength, GPSAlt, TO_Alt), as.numeric),
+      dplyr::across(c(Pixel, ObjLength,
+                      GPSAlt, TO_Alt), as.numeric),
       C_Alt = GPSAlt + TO_Alt,
       eGSD = round((ObjLength/100)/Pixel, 4)
     )
