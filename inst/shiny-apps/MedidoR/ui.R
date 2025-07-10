@@ -347,7 +347,7 @@ ui <- shiny::fluidPage(
             shiny::fluidRow(shiny::strong("Accuracy plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("meanplot",
+              shiny::plotOutput("variance",
                                 height = "600"),
               type = getOption("spinner.type",
                                default = 4)

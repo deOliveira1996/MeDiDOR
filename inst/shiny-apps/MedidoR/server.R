@@ -57,7 +57,8 @@ server <- function(input, output, session) {
     # Calibração
     calib_path = NULL,
     calib_data = NULL,
-    calib_model = NULL
+    calib_model = NULL,
+    calib_train = NULL
   )
 
   ############################ Path  block ############################
@@ -655,7 +656,7 @@ server <- function(input, output, session) {
         stats::na.omit()
 
       # Treinar modelo
-      rv$calib_model <- caret::train(
+      rv$calib_train <- caret::train(
         as.numeric(eGSD) ~ as.numeric(C_Alt),
         data = rv$calib_data,
         method = "lm",
@@ -663,6 +664,12 @@ server <- function(input, output, session) {
                                         number = 10,
                                         repeats = 5)
       )
+
+      rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
+                           data = rv$calib_data)
+
+      rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
+      rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
 
       # Atualizar medições
       updated <- MedidoR:::update_measurements(
@@ -691,53 +698,41 @@ server <- function(input, output, session) {
 
   # Model plot  block
 
-  output$meanplot <- shiny::renderPlot({
-    req(input$calib)
-
-    mean_plot <- ggplot2::ggplot(
-      as.data.frame(rv$calib_data),
-      ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)) +
-      ggplot2::geom_point() +
-      ggplot2::geom_smooth(method = "lm", se = TRUE) +
-      ggplot2::theme_classic() +
-      ggplot2::labs(x = "Altitude (m)", y = "eGSD")
-
-    mean_plot
-
-    # Save plots if requested
-    if (input$save_plot == "Y") {
-
-      ggplot2::ggsave(filename = "Regression_plot.png",
-                      plot = mean_plot,
-                      path = rv$current_dir,
-                      width = 10,
-                      height = 6)
-    }
-  })
-
   output$checkm <- shiny::renderPlot({
-    req(input$calib)
+  req(input$calib, rv$calib_model)
 
-    p <- performance::check_model(rv$calib_model,
-                                  check = c("linearity", "qq",
-                                            "homogeneity", "outliers"))
+  tryCatch({
+    final_model <- rv$calib_model
 
-    p
+    # Configurar área de plotagem
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par))
+    par(mfrow = c(2, 2))
 
+    # Plotar diagnósticos padrão do lm
+    plot(final_model)
+
+    # Salvar se necessário
     if (input$save_plot == "Y") {
-      ggplot2::ggsave(
-        file.path(rv$current_dir, "Diagnostic_plot.png"),
-        plot = p,
-        width = 10,
-        height = 6
-      )
+
+      par(mfrow = c(2, 2))
+      plot(final_model)
+      png(file.path(rv$current_dir, "Diagnostic_plot.png"),
+          width = 10, height = 6,
+          units = "in", res = 300)
+      dev.off()
     }
+  }, error = function(e) {
+    showNotification(paste("Error generating diagnostic graphs:", e$message),
+                     type = "error")
+    return(NULL)
   })
+})
 
   output$variance <- shiny::renderPlot({
     req(input$calib)
 
-    var_p <- ggplot2::ggplot(
+    ggplot2::ggplot(
       as.data.frame(rv$calib_data),
       ggplot2::aes(x = as.factor(round(C_Alt, 0)), y = LcGSD)
     ) +
@@ -759,9 +754,9 @@ server <- function(input, output, session) {
         "Mean and RMSE values estimated",
         subtitle = sprintf(
           "RMSE = %.3f, R² = %.3f, MAE = %.3f",
-          rv$calib_model$results$RMSE,
-          rv$calib_model$results$Rsquared,
-          rv$calib_model$results$MAE
+          rv$calib_train$results$RMSE,
+          rv$calib_train$results$Rsquared,
+          rv$calib_train$results$MAE
         )
       ) +
       ggplot2::geom_hline(
@@ -776,7 +771,6 @@ server <- function(input, output, session) {
         colour = 'red',
         linewidth = 1
       ) +
-      # Configuração da legenda
       ggplot2::scale_linetype_manual(
         name = "Reference Lines",
         values = c(1, 1),
@@ -787,16 +781,72 @@ server <- function(input, output, session) {
           )
         )
       ) +
-      # Melhorar aparência da legenda
       ggplot2::theme(
         legend.position = "bottom",
         legend.box = "horizontal",
         legend.title = ggplot2::element_text(face = "bold")
       )
 
-    var_p
-
     if (input$plot_save == "Y") {
+
+      var_p <- ggplot2::ggplot(
+        as.data.frame(rv$calib_data),
+        ggplot2::aes(x = as.factor(round(C_Alt, 0)), y = LcGSD)
+      ) +
+        ggplot2::stat_summary(
+          fun.data = "mean_sdl",
+          fun.args = list(mult = 1),
+          geom = "errorbar",
+          color = "black",
+          width = 0.1
+        ) +
+        ggplot2::stat_summary(
+          fun = mean,
+          geom = "point",
+          color = "black"
+        ) +
+        ggplot2::theme_classic(base_family = "serif", base_size = 14) +
+        ggplot2::labs(x = "Altitude (m)", y = "Measurements (meters)") +
+        ggplot2::ggtitle(
+          "Mean and RMSE values estimated",
+          subtitle = sprintf(
+            "RMSE = %.3f, R² = %.3f, MAE = %.3f",
+            rv$calib_train$results$RMSE,
+            rv$calib_train$results$Rsquared,
+            rv$calib_train$results$MAE
+          )
+        ) +
+        ggplot2::geom_hline(
+          ggplot2::aes(yintercept = unique(ObjLength) / 100,
+                       linetype = paste("Object length:", round(unique(ObjLength)/100, 2), "m")),
+          colour = 'blue',
+          linewidth = 1
+        ) +
+        ggplot2::geom_hline(
+          ggplot2::aes(yintercept = mean(LcGSD),
+                       linetype = paste("Mean estimated length:", round(mean(LcGSD), 2), "m")),
+          colour = 'red',
+          linewidth = 1
+        ) +
+        # Configuração da legenda
+        ggplot2::scale_linetype_manual(
+          name = "Reference Lines",
+          values = c(1, 1),
+          guide = ggplot2::guide_legend(
+            override.aes = list(
+              colour = c("red", "blue"),
+              linewidth = 1
+            )
+          )
+        ) +
+        # Melhorar aparência da legenda
+        ggplot2::theme(
+          legend.position = "bottom",
+          legend.box = "horizontal",
+          legend.title = ggplot2::element_text(face = "bold")
+        )
+
+      var_p
 
       ggplot2::ggsave(filename = "Variance_plot.png",
                       plot = var_p,
@@ -805,6 +855,36 @@ server <- function(input, output, session) {
                       height = 6)
    }
  })
+
+  output$mplot <- shiny::renderPlot({
+    req(input$calib)
+
+    ggplot2::ggplot(as.data.frame(rv$calib_data),
+      ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)) +
+      ggplot2::geom_point() +
+      ggplot2::geom_smooth(method = "lm", se = TRUE) +
+      ggplot2::theme_classic() +
+      ggplot2::labs(x = "Altitude (m)", y = "eGSD")
+
+    # Save plots if requested
+    if (input$save_plot == "Y") {
+      mean_plot <- ggplot2::ggplot(
+        as.data.frame(rv$calib_data),
+        ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)) +
+        ggplot2::geom_point() +
+        ggplot2::geom_smooth(method = "lm", se = TRUE) +
+        ggplot2::theme_classic() +
+        ggplot2::labs(x = "Altitude (m)", y = "eGSD")
+
+      mean_plot
+
+      ggplot2::ggsave(filename = "Regression_plot.png",
+                      plot = mean_plot,
+                      path = rv$current_dir,
+                      width = 10,
+                      height = 6)
+    }
+  })
 
   ################
   # Close button #
