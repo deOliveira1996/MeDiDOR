@@ -29,7 +29,7 @@ server <- function(input, output, session) {
 
     # Novos dados
     new_id = character(),
-    new_score = "Not assigned",
+    new_score = character(),
     new_date = character(),
     new_f_alt = numeric(),
     new_to_alt = numeric(),
@@ -131,6 +131,22 @@ server <- function(input, output, session) {
           footer = shiny::modalButton("OK")
         )
       )
+    }
+  })
+
+  shiny::observeEvent(input$score, {
+    req(input$file)
+    if (input$score == 1) {
+      rv$new_score <- "Good"
+    }
+    if (input$score == 2) {
+      rv$new_score <- "Moderate"
+    }
+    if (input$score == 3) {
+      rv$new_score <- "Bad"
+    }
+    if (input$score == 4) {
+      rv$new_score <- "Not assigned"
     }
   })
 
@@ -337,7 +353,6 @@ server <- function(input, output, session) {
     if (nrow(rv$fw_measurements) == 2) {
       MedidoR:::show_measurement_modal("Measurements complete")
       process_measurements()
-      rv$add_status <- FALSE
     }
   }
 
@@ -429,6 +444,17 @@ server <- function(input, output, session) {
       )
       if (nrow(rv$length_measurements) == 3) {
         MedidoR:::show_measurement_modal("Length measurements completed. Take widths.")
+        shiny::showModal(
+          shiny::modalDialog(
+            title = "Measurement Progress",
+            HTML(
+              "<b>Length measurement complete!</b><br>
+             Click along the perpendicular lines to measure widths."
+            ),
+            footer = shiny::modalButton("Continue"),
+            easyClose = TRUE
+          )
+        )
       }
     } else {
       target <- ifelse(rv$segments == 1, 18, 38)
@@ -436,26 +462,13 @@ server <- function(input, output, session) {
         handle_width_measurement(input$plot_click$x, input$plot_click$y)
       } else {
         handle_fluke_measurements(input$plot_click$x, input$plot_click$y)
+        rv$add_status <- FALSE
       }
     }
   })
 
   shiny::observe({
-    req(rv$current_image)
-
-    if (nrow(rv$length_measurements) == 3) {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Measurement Progress",
-          HTML(
-            "<b>Length measurement complete!</b><br>
-             Click along the perpendicular lines to measure widths."
-          ),
-          footer = shiny::modalButton("Continue"),
-          easyClose = TRUE
-        )
-      )
-    }
+    req(input$file)
 
     if (nrow(rv$length_measurements) > 0) {
       shiny::updateActionButton(session, "crop", disabled = TRUE)
@@ -485,7 +498,7 @@ server <- function(input, output, session) {
       Measured_Date = format(as.POSIXct(Sys.time()),
                              "%Y-%m-%d %H:%M:%S"),
       ID = as.character(rv$new_id),
-      Frame_Score = as.character(input$score),
+      Frame_Score = as.character(rv$new_score),
       F_Alt = as.numeric(rv$new_f_alt),
       TO_Alt = as.numeric(rv$new_to_alt),
       C_Alt = as.numeric(rv$new_calti),
@@ -519,7 +532,7 @@ server <- function(input, output, session) {
   save_data <- function(new_entry) {
     tryCatch({
 
-      rv$main_data <- rv$main_data |>
+      rv$main_data <- readxl::read_xlsx(rv$main, col_names = T) |>
         dplyr::mutate(
           dplyr::across(c(F_Alt, TO_Alt, C_Alt, BL, starts_with("WD_"),
                           cGSD, EstLength), as.numeric),
@@ -534,6 +547,8 @@ server <- function(input, output, session) {
       filtered_data <- dtfilter(rv$current_data)
 
       writexl::write_xlsx(x = filtered_data, path = rv$secondary)
+
+      rv$add_status <- TRUE
 
       shiny::showModal(
         modalDialog(
@@ -559,7 +574,6 @@ server <- function(input, output, session) {
     save_data(new_entry = new_entry)
 
     rv$click_save <- TRUE
-    rv$add_status <- TRUE
 
     output$mTable <- DT::renderDataTable({
       MedidoR:::update_data_table(rv$secondary)
@@ -599,9 +613,10 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$confirm_reset, {
     rv$length_measurements <- data.frame()
     rv$width_measurements <- data.frame()
+    rv$fw_measurements <- data.frame()
     # Novos dados
     rv$new_id = character()
-    rv$new_score = "Not assigned"
+    rv$new_score = character()
     rv$new_date = character()
     rv$new_f_alt = numeric()
     rv$new_calti = numeric()
@@ -610,6 +625,7 @@ server <- function(input, output, session) {
     rv$new_fw = numeric()
     rv$crop_status = FALSE
     rv$add_status = TRUE
+    rv$click_status = FALSE
     shiny::updateActionButton(session, "crop", disabled = FALSE)
     shiny::updateActionButton(session, "saveBtn", disabled = TRUE)
     shiny::updateTextInput(inputId = "comments", value = "")
