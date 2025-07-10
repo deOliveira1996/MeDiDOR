@@ -25,7 +25,7 @@ dtfilter <- function(x) {
         Date
       )
     ) |>
-    dplyr::arrange(by_group = ID)
+    dplyr::arrange(Segments, by_group = ID)
   return(x)
 } # Function to filter the data for the data.table output
 
