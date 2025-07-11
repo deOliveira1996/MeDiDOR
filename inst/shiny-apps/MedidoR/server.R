@@ -25,6 +25,7 @@ server <- function(input, output, session) {
     current_data = NULL,
     main = NULL,
     secondary = NULL,
+    dir_path = NULL,
 
     # Diretórios
     user_dir = getwd(),
@@ -102,6 +103,7 @@ server <- function(input, output, session) {
 
     rv$main <- paths$main
     rv$secondary <- paths$secondary
+    rv$dir_path <- dir_path
 
     if (!dir.exists(dir_path)) {
       dir.create(dir_path)
@@ -163,6 +165,7 @@ server <- function(input, output, session) {
 
     rv$main <- paths$main
     rv$secondary <- paths$secondary
+    rv$dir_path <- dir_path
 
     if (file.exists(rv$secondary)) {
       rv$main_data <- readxl::read_xlsx(rv$main)
@@ -840,6 +843,73 @@ server <- function(input, output, session) {
       showNotification(paste("Error generating regression graph:", e$message), type = "error")
       return(NULL)
     })
+  })
+
+  shiny::observeEvent(input$n_whales, {
+    req(rv$segments, rv$user_dir)
+
+    if (input$n_whales != 0) {
+      tryCatch({
+        file_name <- ifelse(rv$segments == 1,
+                            "Measurements_10_1.xlsx",
+                            "Measurements_05_1.xlsx")
+        file_path <- file.path(rv$dir_path, file_name)
+
+        if (!file.exists(file_path)) {
+          stop("Measurement file not found")
+        }
+
+        measurements <- readxl::read_excel(path = file_path,
+                                           col_names = TRUE) |>
+          dplyr::mutate(
+            Date_mmd = format(as.Date(Date), "%m-%d"),
+            ID_combined = paste(ID, " (", Date_mmd, ")", sep = "")
+          )
+
+        if (!"ID" %in% names(measurements) || !"Date" %in% names(measurements)) {
+          stop("Columns 'ID' or 'Date' not found in data")
+        }
+
+        unique_ids <- unique(measurements$ID_combined)
+
+        if (length(unique_ids) == 0) {
+          stop("No data available for display")
+        }
+
+        selected_ids <- unique_ids[1:min(input$n_whales, length(unique_ids))]
+        filtered_data <- measurements[measurements$ID_combined %in% selected_ids, ]
+
+        output$lplot <- shiny::renderPlot({
+          ggplot2::ggplot(filtered_data,
+                          ggplot2::aes(x = Segments, y = Pixel, fill = ID_combined)) +
+            ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8),
+                              show.legend = TRUE) +
+            ggplot2::theme_classic() +
+            ggplot2::labs(title = "Pixel Measurements per Segment",
+                          x = "Segments", y = "Pixels",
+                          fill = "ID (Date)") +
+            ggplot2::scale_fill_viridis_d() +
+            ggplot2::theme(legend.position = "bottom")
+        })
+
+        output$mwhale <- shiny::renderPlot({
+          ggplot2::ggplot(filtered_data,
+                          ggplot2::aes(x = Segments, y = EstLength, fill = ID_combined)) +
+            ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8),
+                              show.legend = TRUE) +
+            ggplot2::theme_classic() +
+            ggplot2::labs(title = "Estimated Lengths (meters)",
+                          x = "Segments", y = "Length (m)",
+                          fill = "ID (Date)") +
+            ggplot2::scale_fill_viridis_d() +
+            ggplot2::theme(legend.position = "bottom")
+        })
+
+      }, error = function(e) {
+        showNotification(paste("Error generating graphs:", e$message),
+                         type = "error")
+      })
+    }
   })
 
   ################
