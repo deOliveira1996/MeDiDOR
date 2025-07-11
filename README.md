@@ -1,8 +1,4 @@
----
-output:
-  html_document: default
-  pdf_document: default
----
+
 # MedidoR: Aerial Photogrammetry Analysis Tool
 
 <img src="man/figures/logo.png" align="right" width="120"/>
@@ -62,7 +58,6 @@ Documentation For detailed documentation of all functions, see:
 
 ``` r
 ?medidor
-?dtfilter
 ```
 
 Package vignettes (coming soon) will provide comprehensive tutorials and use cases.
