@@ -32,5 +32,6 @@ Imports:
     tidyr,
     tidyverse,
     ggplot2,
+    lattice,
     Hmisc
 RoxygenNote: 7.3.2

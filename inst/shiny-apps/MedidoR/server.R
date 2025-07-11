@@ -642,7 +642,7 @@ server <- function(input, output, session) {
     shiny::removeModal()
   })
 
-  # Calibration  block
+  #################################### Calibration  block ####################################
 
   # Re factored Calibration Handler
   shiny::observeEvent(input$calib, {
@@ -686,7 +686,6 @@ server <- function(input, output, session) {
         })
         showNotification("Calibration applied successfully", type = "message")
       }
-
     }, error = function(e) {
       showNotification(paste("Calibration failed:", e$message), type = "error")
 
@@ -694,102 +693,51 @@ server <- function(input, output, session) {
                       data.frame(Timestamp = Sys.time(),
                                  Message = paste("Error:", e$message))))
     })
+
+    if (input$save_plot == "Y") {
+      dir.create(file.path(rv$user_dir, "Model-Plots"))
+    }
   })
 
-  # Model plot  block
+  #################################### Model Plot Block ####################################
 
   output$checkm <- shiny::renderPlot({
-  req(input$calib, rv$calib_model)
+    req(input$calib, rv$calib_model)
 
-  tryCatch({
-    final_model <- rv$calib_model
-
-    # Configurar área de plotagem
-    old_par <- par(no.readonly = TRUE)
-    on.exit(par(old_par))
-    par(mfrow = c(2, 2))
-
-    # Plotar diagnósticos padrão do lm
-    plot(final_model)
-
-    # Salvar se necessário
-    if (input$save_plot == "Y") {
-
+    tryCatch({
+      # Configurar área de plotagem
+      old_par <- par(no.readonly = TRUE)
+      on.exit(par(old_par))
       par(mfrow = c(2, 2))
-      plot(final_model)
-      png(file.path(rv$current_dir, "Diagnostic_plot.png"),
-          width = 10, height = 6,
-          units = "in", res = 300)
-      dev.off()
-    }
-  }, error = function(e) {
-    showNotification(paste("Error generating diagnostic graphs:", e$message),
-                     type = "error")
-    return(NULL)
+
+      # Plotar diagnósticos
+      plot(rv$calib_model)
+
+      # Salvar se necessário
+      if (input$save_plot == "Y") {
+        png(file.path(rv$user_dir, "Diagnostic_plot.png"),
+            width = 10, height = 6, units = "in", res = 300)
+        par(mfrow = c(2, 2))
+        plot(rv$calib_model)
+        dev.off()
+      }
+
+    }, error = function(e) {
+      showNotification(paste("Erro ao gerar gráficos de diagnóstico:", e$message),
+                       type = "error")
+      return(NULL)
+    })
   })
-})
 
   output$variance <- shiny::renderPlot({
-    req(input$calib)
+    req(input$calib, rv$calib_data, rv$calib_train)
 
-    ggplot2::ggplot(
-      as.data.frame(rv$calib_data),
-      ggplot2::aes(x = as.factor(round(C_Alt, 0)), y = LcGSD)
-    ) +
-      ggplot2::stat_summary(
-        fun.data = "mean_sdl",
-        fun.args = list(mult = 1),
-        geom = "errorbar",
-        color = "black",
-        width = 0.1
-      ) +
-      ggplot2::stat_summary(
-        fun = mean,
-        geom = "point",
-        color = "black"
-      ) +
-      ggplot2::theme_classic(base_family = "serif", base_size = 14) +
-      ggplot2::labs(x = "Altitude (m)", y = "Measurements (meters)") +
-      ggplot2::ggtitle(
-        "Mean and RMSE values estimated",
-        subtitle = sprintf(
-          "RMSE = %.3f, R² = %.3f, MAE = %.3f",
-          rv$calib_train$results$RMSE,
-          rv$calib_train$results$Rsquared,
-          rv$calib_train$results$MAE
-        )
-      ) +
-      ggplot2::geom_hline(
-        ggplot2::aes(yintercept = unique(ObjLength) / 100,
-                     linetype = paste("Object length:", round(unique(ObjLength)/100, 2), "m")),
-        colour = 'blue',
-        linewidth = 1
-      ) +
-      ggplot2::geom_hline(
-        ggplot2::aes(yintercept = mean(LcGSD),
-                     linetype = paste("Mean estimated length:", round(mean(LcGSD), 2), "m")),
-        colour = 'red',
-        linewidth = 1
-      ) +
-      ggplot2::scale_linetype_manual(
-        name = "Reference Lines",
-        values = c(1, 1),
-        guide = ggplot2::guide_legend(
-          override.aes = list(
-            colour = c("red", "blue"),
-            linewidth = 1
-          )
-        )
-      ) +
-      ggplot2::theme(
-        legend.position = "bottom",
-        legend.box = "horizontal",
-        legend.title = ggplot2::element_text(face = "bold")
-      )
+    tryCatch({
+      if(!"C_Alt" %in% names(rv$calib_data) || !"LcGSD" %in% names(rv$calib_data) || !"ObjLength" %in% names(rv$calib_data)) {
+        stop("Calibration data does not contain required columns")
+      }
 
-    if (input$plot_save == "Y") {
-
-      var_p <- ggplot2::ggplot(
+      p <- ggplot2::ggplot(
         as.data.frame(rv$calib_data),
         ggplot2::aes(x = as.factor(round(C_Alt, 0)), y = LcGSD)
       ) +
@@ -828,7 +776,6 @@ server <- function(input, output, session) {
           colour = 'red',
           linewidth = 1
         ) +
-        # Configuração da legenda
         ggplot2::scale_linetype_manual(
           name = "Reference Lines",
           values = c(1, 1),
@@ -839,51 +786,60 @@ server <- function(input, output, session) {
             )
           )
         ) +
-        # Melhorar aparência da legenda
         ggplot2::theme(
           legend.position = "bottom",
           legend.box = "horizontal",
           legend.title = ggplot2::element_text(face = "bold")
         )
 
-      var_p
+      if (input$save_plot == "Y") {
+        ggplot2::ggsave(filename = "Variance_plot.png",
+                        plot = p,
+                        path = rv$user_dir,
+                        width = 10,
+                        height = 6)
+      }
 
-      ggplot2::ggsave(filename = "Variance_plot.png",
-                      plot = var_p,
-                      path = rv$current_dir,
-                      width = 10,
-                      height = 6)
-   }
- })
+      print(p)
+
+    }, error = function(e) {
+      showNotification(paste("Error generating variance graph:", e$message), type = "error")
+      return(NULL)
+    })
+  })
 
   output$mplot <- shiny::renderPlot({
-    req(input$calib)
+    req(input$calib, rv$calib_data)
 
-    ggplot2::ggplot(as.data.frame(rv$calib_data),
-      ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)) +
-      ggplot2::geom_point() +
-      ggplot2::geom_smooth(method = "lm", se = TRUE) +
-      ggplot2::theme_classic() +
-      ggplot2::labs(x = "Altitude (m)", y = "eGSD")
+    tryCatch({
+      if(!"C_Alt" %in% names(rv$calib_data) || !"eGSD" %in% names(rv$calib_data)) {
+        stop("Dados de calibração não contêm colunas necessárias")
+      }
 
-    # Save plots if requested
-    if (input$save_plot == "Y") {
-      mean_plot <- ggplot2::ggplot(
+      p <- ggplot2::ggplot(
         as.data.frame(rv$calib_data),
-        ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)) +
+        ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)
+      ) +
         ggplot2::geom_point() +
-        ggplot2::geom_smooth(method = "lm", se = TRUE) +
+        ggplot2::geom_smooth(method = "lm", formula = y ~ x, se = TRUE) +
         ggplot2::theme_classic() +
         ggplot2::labs(x = "Altitude (m)", y = "eGSD")
 
-      mean_plot
+      # Salvar o gráfico se necessário
+      if (input$save_plot == "Y") {
+        ggplot2::ggsave(filename = "Regression_plot.png",
+                        plot = p,
+                        path = rv$user_dir,
+                        width = 10,
+                        height = 6)
+      }
 
-      ggplot2::ggsave(filename = "Regression_plot.png",
-                      plot = mean_plot,
-                      path = rv$current_dir,
-                      width = 10,
-                      height = 6)
-    }
+      print(p)
+
+    }, error = function(e) {
+      showNotification(paste("Error generating regression graph:", e$message), type = "error")
+      return(NULL)
+    })
   })
 
   ################
