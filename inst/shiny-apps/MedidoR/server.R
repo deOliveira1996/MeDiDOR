@@ -715,7 +715,7 @@ server <- function(input, output, session) {
 
       # Salvar se necessário
       if (input$save_plot == "Y") {
-        png(file.path(rv$user_dir, "Diagnostic_plot.png"),
+        png(file.path(rv$user_dir,"Model-Plots", "Diagnostic_plot.png"),
             width = 10, height = 6, units = "in", res = 300)
         par(mfrow = c(2, 2))
         plot(rv$calib_model)
@@ -795,7 +795,7 @@ server <- function(input, output, session) {
       if (input$save_plot == "Y") {
         ggplot2::ggsave(filename = "Variance_plot.png",
                         plot = p,
-                        path = rv$user_dir,
+                        path = file.path(rv$user_dir, "Model-Plots"),
                         width = 10,
                         height = 6)
       }
@@ -829,7 +829,7 @@ server <- function(input, output, session) {
       if (input$save_plot == "Y") {
         ggplot2::ggsave(filename = "Regression_plot.png",
                         plot = p,
-                        path = rv$user_dir,
+                        path = file.path(rv$user_dir, "Model-Plots"),
                         width = 10,
                         height = 6)
       }
