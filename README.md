@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # MedidoR: Aerial Photogrammetry Analysis Tool
 
 <img src="man/figures/logo.png" align="right" width="120"/>
