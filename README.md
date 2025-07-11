@@ -34,7 +34,7 @@ You can install the development version of MedidoR from GitHub:
 if (!require("devtools")) install.packages("devtools")
 
 # Install MedidoR
-devtools::install_github("deOliveira1996/MedidoR")
+devtools::install_github("deOliveira1996/MeDiDOR")
 ```
 
 ## Usage
@@ -107,8 +107,7 @@ Create a new Pull Request
 
 If you use MedidoR in your research, please cite it as:
 
-*de Oliveira, L. (2025). MedidoR: Aerial Photogrammetry Analyses. R
-package version 1.0.0.9999*
+*Lima de Oliveira, L. (2025). MedidoR (1.0.0.9999). Zenodo. https://doi.org/10.5281/zenodo.15865770*
 
 ## License
 
@@ -120,6 +119,6 @@ for details.
 For questions or support, please contact:
 
 Lucas de Oliveira -
-[oceano2014lucas\@gmail.com](mailto:oceano2014lucas@gmail.com){.email}
+[oceano2014lucas\@gmail.com](mailto:oceano2014lucas@gmail.com)
 
-GitHub issues: <https://github.com/deOliveira1996/MedidoR/issues>
+GitHub issues: <https://github.com/deOliveira1996/MeDiDOR/issues>
