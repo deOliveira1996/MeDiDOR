@@ -90,7 +90,7 @@ Create a new Pull Request
 
 If you use MedidoR in your research, please cite it as:
 
-*Lima de Oliveira, L. (2025). MedidoR (1.0.0.99999). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
+*Lima de Oliveira, L. (2025). MedidoR (1.0.0.9999). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
 
 ## License
 
