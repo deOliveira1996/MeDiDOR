@@ -34,7 +34,7 @@ You can install the development version of MedidoR from GitHub:
 if (!require("devtools")) install.packages("devtools")
 
 # Install MedidoR
-devtools::install_github("deOliveira1996/MedidoR")
+devtools::install_github("deOliveira1996/MeDiDOR")
 ```
 
 ## Usage
