@@ -2,10 +2,10 @@
 % Please edit documentation in R/medidor.R
 \name{medidor}
 \alias{medidor}
-\title{medidor}
+\title{Open MedidoR API}
 \usage{
 medidor()
 }
 \description{
-medidor
+Opens a Shiny application developed to conduct aerial photogrammetry analysis. MedidoR allows you to extract and convert pixel measurements from aerial images collected of marine animals.
 }

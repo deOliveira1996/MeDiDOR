@@ -2,42 +2,54 @@
 
 ui <- shiny::fluidPage(
   htmltools::includeCSS("photogrammetry.css"),
-  shiny::titlePanel("MeDiDOR"),
+  shiny::titlePanel("MedidoR"),
   shiny::sidebarLayout(
     shiny::sidebarPanel(
       shiny::wellPanel(
         shiny::fluidRow(shiny::strong("Input Data")),
         width = 2,
+        shiny::actionButton("path",
+                            "Change working directory",
+                            width = "100%"),
         shiny::fileInput(
           "file",
           "Select an image file",
           accept = c(".png", ".jpeg", ".jpg",
                      ".bmp", ".gif", ".tiff")
         ),
-        shiny::actionButton("path", "Change working directory", width = "100%"),
-        shiny::helpText(
-          "The start button must be clicked the first time the
-                             application is used, this button
-                             creates an empty dataframe
-                             to start the measurements."
-        ),
         shiny::radioButtons(
           "segments",
-          "Width interval:",
+          "Select the desired width interval to CREATE or IMPORT the dataset:",
           choices =
-            list("10% interval" = 1, "5% interval" = 2),
+            list("10% interval" = 1, "05% interval" = 2),
           selected = 2
         ),
         shiny::fluidRow(
-          column(width = 6, actionButton("create", "CREATE", width = "100%")),
-          column(width = 6, actionButton("import", "IMPORT", width = "100%"))
+          column(width = 6,
+                 actionButton("create",
+                              "CREATE",
+                              width = "100%")),
+          column(width = 6,
+                 actionButton("import",
+                              "IMPORT",
+                              width = "100%")),
+          shiny::helpText("The", strong("CREATE"), "button creates a data frame
+                        (for measurements every 5% or 10% of the body length)"),
+          shiny::helpText("The", strong("IMPORT"), "button imports a data frame
+                        (for measurements every 5% or 10% of the body length)
+                        already existing in the directory.")
         )
       ),
       shiny::wellPanel(
         shiny::fluidRow(
           shiny::strong("Image parameters"),
-          shiny::textInput("Species", "Species name:", placeholder = "Given Species name")
-        ),
+          shiny::p(),
+          shiny::textInput("Species", "Species name:",
+                           placeholder = "Given Species name"),
+          shiny::textInput("ImageID", "Image-ID:",
+                           placeholder = "Given the Image-ID"),
+        )
+      ),
         shiny::fluidRow(
           shiny::column(
             width = 6,
@@ -50,7 +62,9 @@ ui <- shiny::fluidPage(
               step = 5
             ),
             shiny::br(),
-            shiny::numericInput("takeof", "Take-off Altitude (m)", 0)
+            shiny::numericInput("takeof",
+                                "Take-off Altitude (m)",
+                                value = 0)
           ),
           shiny::column(
             width = 6,
@@ -66,16 +80,23 @@ ui <- shiny::fluidPage(
                 ),
               selected = 4
             ),
-            shiny::textInput("drone", "Drone model:", value = "")
+            shiny::textInput("drone",
+                             "Drone model:",
+                             value = "")
           ),
         ),
 
         shiny::fluidRow(
           shiny::column(
             width = 6,
-            shiny::textInput("Date", "Image collection date: YYYY-MM-DD", value = "")
+            shiny::textInput("Date",
+                             "Image collection date: YYYY-MM-DD",
+                             value = "")
           ),
-          shiny::column(width = 6, shiny::textInput("obs", "Observer:", value = "")),
+          shiny::column(width = 6,
+                        shiny::textInput("obs",
+                                         "Observer:",
+                                         value = "")),
           shiny::column(
             width = 12,
             shiny::textAreaInput(
@@ -87,9 +108,10 @@ ui <- shiny::fluidPage(
           )
         ),
 
-        shiny::actionButton("closeBtn", "Close application", width = "100%"),
-      )
-    ),
+        shiny::actionButton("closeBtn",
+                            "Close application",
+                            width = "100%")
+      ),
 
     shiny::mainPanel(
       width = 8,
@@ -241,7 +263,7 @@ ui <- shiny::fluidPage(
           ),
           shiny::p(shiny::strong("IMPORTANT !!!")),
           shiny::p(
-            "Upon clicking the start button, PhotogrammetrGUI creates the
+            "Upon clicking the start button, MedidoR creates the
                     'Measurements.xlsx' spreadsheet, where the collected measurements
                     are stored (blank spreadsheet). As the user begins measuring the
                     animals, another spreadsheet is created ('Measurements_1.xlsx'), and
@@ -251,17 +273,33 @@ ui <- shiny::fluidPage(
           ),
           shiny::p(
             "Now that you've learned how to use",
-            shiny::strong(shiny::em(" PhotogrammetryGUI")),
+            shiny::strong(shiny::em(" MedidoR")),
             ", have fun!"
-          ),
+          )
         ),
         shiny::tabPanel(
           "Image plot",
-          shiny::plotOutput("imagePlot", height = "600",
-                            click = "plot_click", brush = "crop"),
-          shiny::actionButton("cropBtn", "CROP", width = "33%"),
-          shiny::actionButton("saveBtn", "ADD IN", width = "33%"),
-          shiny::actionButton("clearBtn", "Clear Measurements", width = "33%")
+          uiOutput("crop_status"),
+          fluidRow(
+            shiny::plotOutput(
+              "imagePlot",
+              height = "720",
+              width = "1080",
+              click = "plot_click",
+              brush = brushOpts(
+                id = "plot_brush",
+                resetOnNew = T,
+                opacity = 0.1,
+                clip = T
+              )
+            )),
+          uiOutput("add_status"),
+          # Modified button layout
+          div(style = "margin-top: 20px;",
+              shiny::actionButton("crop", "CROP", width = "32%"),
+              shiny::actionButton("saveBtn", "ADD IN", width = "32%"),
+              shiny::actionButton("clearBtn", "CLEAR", width = "32%")
+          )
         ),
 
         shiny::tabPanel(
@@ -269,20 +307,39 @@ ui <- shiny::fluidPage(
           shiny::p(),
           shinycssloaders::withSpinner(
             DT::dataTableOutput("mTable"),
-            type = getOption("spinner.type", default = 4)
+            type = getOption("spinner.type",
+                             default = 4)
           )
         ),
+
         shiny::tabPanel(
           "Calibration",
+          shiny::textInput(inputId = "calib_path",
+                           label = "Calibration data path",
+                           value = "",
+                           placeholder = "Set the desired calibration data path (.xlsx)",
+                           width = "75%"
+                           ),
           shiny::p(),
-          shiny::actionButton("calib", "Run model calibration"),
+          shiny::actionButton("calib",
+                              "RUN Calibration",
+                              width = "50%"),
+          shiny::radioButtons("save_plot",
+                              "Save plots ?",
+                              choices =
+                                list("Yes" = "Y",
+                                     "No" = "N"),
+                              selected = "Y"
+                              ),
           shiny::p(),
           shiny::wellPanel(
             shiny::fluidRow(shiny::strong("Diagnostic plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("checkm", height = "600"),
-              type = getOption("spinner.type", default = 4)
+              shiny::plotOutput("checkm",
+                                height = "600"),
+              type = getOption("spinner.type",
+                               default = 4)
             )
           ),
           shiny::p(),
@@ -290,19 +347,24 @@ ui <- shiny::fluidPage(
             shiny::fluidRow(shiny::strong("Accuracy plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("meanplot", height = "600"),
-              type = getOption("spinner.type", default = 4)
+              shiny::plotOutput("variance",
+                                height = "600"),
+              type = getOption("spinner.type",
+                               default = 4)
             )
           ),
           shiny::wellPanel(
             shiny::fluidRow(shiny::strong("Regression plot")),
             shiny::p(),
             shinycssloaders::withSpinner(
-              shiny::plotOutput("mplot", height = "600"),
-              type = getOption("spinner.type", default = 4)
+              shiny::plotOutput("mplot",
+                                height = "600"),
+              type = getOption("spinner.type",
+                               default = 4)
             )
           )
         ),
+
         shiny::tabPanel(
           "Measured Whales",
           shiny::h1("Measurement distribution histogram"),
@@ -315,20 +377,26 @@ ui <- shiny::fluidPage(
           ),
           shiny::p(),
           shiny::wellPanel(
-            shiny::fluidRow(shiny::strong("Pixel measurements")),
+            shiny::fluidRow(
+              shiny::strong("Pixel measurements")),
             shiny::p(),
-            shinycssloaders::withSpinner(shiny::plotOutput("lplot"), type = getOption("spinner.type", default = 4))
+            shinycssloaders::withSpinner(
+              shiny::plotOutput("lplot"),
+              type = getOption("spinner.type",
+                               default = 4)
+              )
           ),
           shiny::wellPanel(
-            shiny::fluidRow(shiny::strong("Estimated lengths (meters)")),
+            shiny::fluidRow(
+              shiny::strong("Estimated lengths (meters)")),
             shiny::p(),
             shinycssloaders::withSpinner(
               shiny::plotOutput("mwhale"),
-              type = getOption("spinner.type", default = 4)
+              type = getOption("spinner.type",
+                               default = 4)
             )
-            ,
           )
-        ),
+        )
       )
     )
   )
