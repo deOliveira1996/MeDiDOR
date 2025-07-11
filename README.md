@@ -1,29 +1,19 @@
 ---
-editor_options: 
-  markdown: 
-    wrap: 72
+output:
+  html_document: default
+  pdf_document: default
 ---
-
 # MedidoR: Aerial Photogrammetry Analysis Tool
 
 <img src="man/figures/logo.png" align="right" width="120"/>
 
-[![License:
-MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![R-CMD-check](https://github.com/deOliveira1996/MedidoR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/deOliveira1996/MedidoR/actions/workflows/R-CMD-check.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![R-CMD-check](https://github.com/deOliveira1996/MedidoR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/deOliveira1996/MedidoR/actions/workflows/R-CMD-check.yaml)
 
 ## Overview
 
-MedidoR is an R package designed to assist in the collection and
-analysis of morphometric measurements from drone-collected images of
-marine animals, particularly marine mammals. The package implements
-aerial photogrammetry techniques using scale calibration objects to
-estimate accurate measurements from images.
+MedidoR is an R package designed to assist in the collection and analysis of morphometric measurements from drone-collected images of marine animals, particularly marine mammals. The package implements aerial photogrammetry techniques using scale calibration objects to estimate accurate measurements from images.
 
-Key features: - Interactive Shiny application for measurement
-collection - Calibration tools for converting pixel measurements to
-real-world dimensions - Data management and visualization tools -
-Support for both 5% and 10% segment interval analyses
+Key features: - Interactive Shiny application for measurement collection - Calibration tools for converting pixel measurements to real-world dimensions - Data management and visualization tools - Support for both 5% and 10% segment interval analyses
 
 ## Installation
 
@@ -75,11 +65,9 @@ Documentation For detailed documentation of all functions, see:
 ?dtfilter
 ```
 
-Package vignettes (coming soon) will provide comprehensive tutorials and
-use cases.
+Package vignettes (coming soon) will provide comprehensive tutorials and use cases.
 
-Example Data The package includes example data for testing and
-demonstration purposes. To access example files:
+Example Data The package includes example data for testing and demonstration purposes. To access example files:
 
 ``` r
 # Get path to example image
@@ -107,18 +95,16 @@ Create a new Pull Request
 
 If you use MedidoR in your research, please cite it as:
 
-*Lima de Oliveira, L. (2025). MedidoR (1.0.0.9999). Zenodo. https://doi.org/10.5281/zenodo.15865770*
+*Lima de Oliveira, L. (2025). MedidoR (1.0.0.9999). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file
-for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contact
 
 For questions or support, please contact:
 
-Lucas de Oliveira -
-[oceano2014lucas\@gmail.com](mailto:oceano2014lucas@gmail.com)
+Lucas de Oliveira - [oceano2014lucas\@gmail.com](mailto:oceano2014lucas@gmail.com)
 
 GitHub issues: <https://github.com/deOliveira1996/MeDiDOR/issues>
