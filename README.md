@@ -1,8 +1,4 @@
----
-output:
-  html_document: default
-  pdf_document: default
----
+
 # MedidoR: Aerial Photogrammetry Analysis Tool
 
 <img src="man/figures/logo.png" align="right" width="120"/>
@@ -62,7 +58,6 @@ Documentation For detailed documentation of all functions, see:
 
 ``` r
 ?medidor
-?dtfilter
 ```
 
 Package vignettes (coming soon) will provide comprehensive tutorials and use cases.
@@ -95,7 +90,7 @@ Create a new Pull Request
 
 If you use MedidoR in your research, please cite it as:
 
-*Lima de Oliveira, L. (2025). MedidoR (1.0.0.9999). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
+*Lima de Oliveira, L. (2025). MedidoR (1.0.0.99999). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
 
 ## License
 

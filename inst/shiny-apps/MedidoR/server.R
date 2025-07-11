@@ -521,7 +521,8 @@ server <- function(input, output, session) {
                          paste0("WD_", seq(10, 90, by = 10)))
     } else {
       widths <- setNames(as.list(rv$new_widths[1:19]),
-                         paste0("WD_", seq(5, 95, by = 5)))
+                         ifelse(rv$new_widths[1], paste0("WD_0", 5),
+                                paste0("WD_", seq(10, 95, by = 5))))
     }
 
     widths <- lapply(widths, as.numeric)
