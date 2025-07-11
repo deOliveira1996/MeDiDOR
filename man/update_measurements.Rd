@@ -4,7 +4,13 @@
 \alias{update_measurements}
 \title{Update the data with calibration model estimates}
 \usage{
-update_measurements(model, segments)
+update_measurements(
+  main_path,
+  secondary_path,
+  model,
+  calib_data,
+  current_data = NULL
+)
 }
 \description{
 Update the data with calibration model estimates

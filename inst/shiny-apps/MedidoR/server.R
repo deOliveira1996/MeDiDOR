@@ -4,6 +4,9 @@ options(shiny.maxRequestSize = 50 * 1024^2)
 # Define server
 server <- function(input, output, session) {
 
+  calib_log <- reactiveVal(data.frame(Timestamp = character(),
+                                      Message = character()))
+
   # Reactive values ----
   rv <- shiny::reactiveValues(
     # Controle de segmentos
@@ -54,7 +57,8 @@ server <- function(input, output, session) {
     # Calibração
     calib_path = NULL,
     calib_data = NULL,
-    calib_model = NULL
+    calib_model = NULL,
+    calib_train = NULL
   )
 
   ############################ Path  block ############################
@@ -638,99 +642,105 @@ server <- function(input, output, session) {
     shiny::removeModal()
   })
 
-  # Calibration  block
+  #################################### Calibration  block ####################################
 
   # Re factored Calibration Handler
   shiny::observeEvent(input$calib, {
-    req(input$calib_path)
+    req(input$calib_path, rv$main, rv$secondary)
 
-    if(!file.exists(input$calib_path)) {
-      showNotification("Calibration file not found", type = "error")
-      return()
-    }
+    tryCatch({
+      rv$calib_path <- input$calib_path
 
-    rv$calib_data <- MedidoR:::calib(rv$calib_path)
+      # Carregar e processar dados de calibração
+      rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
+        stats::na.omit()
 
-    calib <- stats::na.omit(rv$calib_data)
+      # Treinar modelo
+      rv$calib_train <- caret::train(
+        as.numeric(eGSD) ~ as.numeric(C_Alt),
+        data = rv$calib_data,
+        method = "lm",
+        trControl = caret::trainControl(method = "repeatedcv",
+                                        number = 10,
+                                        repeats = 5)
+      )
 
-    m1 <- stats::lm(as.numeric(eGSD) ~ as.numeric(C_Alt), data = calib)
+      rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
+                           data = rv$calib_data)
 
-    train.control <- caret::trainControl(method = "repeatedcv",
-                                         number = 10,
-                                         repeats = 5)
-    # Train the model
-    m1 <- caret::train(
-      as.numeric(eGSD) ~ as.numeric(C_Alt),
-      data = calib,
-      method = "lm",
-      trControl = train.control
-    )
+      rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
+      rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
 
-    rv$calib_model <- m1
+      # Atualizar medições
+      updated <- MedidoR:::update_measurements(
+        main_path = rv$main,
+        secondary_path = rv$secondary,
+        model = rv$calib_model,
+        calib_data = rv$calib_data,
+        current_data = NULL
+      )
 
-    calib$cGSD <- stats::predict(m1, calib)
+      if (!is.null(updated)) {
+        output$mTable <- DT::renderDataTable({
+          MedidoR:::update_data_table(rv$secondary)
+        })
+        showNotification("Calibration applied successfully", type = "message")
+      }
+    }, error = function(e) {
+      showNotification(paste("Calibration failed:", e$message), type = "error")
 
-    calib$LcGSD <- as.numeric(calib$Pixel ) * as.numeric(calib$cGSD)
+      calib_log(rbind(calib_log(),
+                      data.frame(Timestamp = Sys.time(),
+                                 Message = paste("Error:", e$message))))
+    })
 
-    rv$calib_data <- calib
-
-    # Verificar R² mínimo aceitável
-    if(rv$calib_model$results$Rsquared < 0.7) {
-      showModal(modalDialog(
-        title = "Aviso",
-        "Modelo de calibração com R² baixo. Deseja continuar?",
-        footer = tagList(
-          actionButton("force_calib", "Continuar"),
-          modalButton("Cancelar")
-        )
-      ))
-    }
-
-    # Save plots if requested
     if (input$save_plot == "Y") {
-      MedidoR:::save_calibration_plots(
-        MedidoR:::create_calibration_plots(rv$calib_data,
-                                           rv$calib_model),
-        rv$current_dir)
-    }
-
-    # Update measurements data
-    updated_measurements <- MedidoR:::update_measurements(rv$calib_model, rv$segments)
-
-    # Update data table if successful
-    if (!is.null(updated_measurements)) {
-      output$mTable <- DT::renderDataTable({
-        MedidoR:::update_data_table(paths$secondary)
-      })
+      dir.create(file.path(rv$user_dir, "Model-Plots"))
     }
   })
 
-  # Model plot  block
-
-  output$meanplot <- shiny::renderPlot({
-    req(input$calib, rv$calib_data, rv$calib_model)
-
-    ggplot2::ggplot(
-      as.data.frame(rv$calib_data),
-      ggplot2::aes(x = as.numeric(C_Alt), y = eGSD) +
-        ggplot2::geom_point() +
-        ggplot2::geom_smooth(method = "lm", se = TRUE) +
-        ggplot2::theme_classic() +
-        ggplot2::labs(x = "Altitude (m)", y = "eGSD")
-    )
-  })
+  #################################### Model Plot Block ####################################
 
   output$checkm <- shiny::renderPlot({
-    req(input$calib, rv$calib_data, rv$calib_model)
-    performance::check_model(rv$calib_model,
-                             check = c("linearity", "qq", "homogeneity", "outliers"))
+    req(input$calib, rv$calib_model)
+
+    tryCatch({
+      # Configurar área de plotagem
+      old_par <- par(no.readonly = TRUE)
+      on.exit(par(old_par))
+      par(mfrow = c(2, 2))
+
+      # Plotar diagnósticos
+      plot(rv$calib_model)
+
+      # Salvar se necessário
+      if (input$save_plot == "Y") {
+        png(file.path(rv$user_dir, "Diagnostic_plot.png"),
+            width = 10, height = 6, units = "in", res = 300)
+        par(mfrow = c(2, 2))
+        plot(rv$calib_model)
+        dev.off()
+      }
+
+    }, error = function(e) {
+      showNotification(paste("Erro ao gerar gráficos de diagnóstico:", e$message),
+                       type = "error")
+      return(NULL)
+    })
   })
 
   output$variance <- shiny::renderPlot({
-    req(input$calib, rv$calib_data, rv$calib_model)
-    ggplot2::ggplot(
-      as.data.frame(rv$calib_data),
-      ggplot2::aes(x = as.numeric(C_Alt), y = LcGSD) +
+    req(input$calib, rv$calib_data, rv$calib_train)
+
+    tryCatch({
+      if(!"C_Alt" %in% names(rv$calib_data) || !"LcGSD" %in% names(rv$calib_data) || !"ObjLength" %in% names(rv$calib_data)) {
+        stop("Calibration data does not contain required columns")
+      }
+
+      p <- ggplot2::ggplot(
+        as.data.frame(rv$calib_data),
+        ggplot2::aes(x = as.factor(round(C_Alt, 0)), y = LcGSD)
+      ) +
         ggplot2::stat_summary(
           fun.data = "mean_sdl",
           fun.args = list(mult = 1),
@@ -749,30 +759,87 @@ server <- function(input, output, session) {
           "Mean and RMSE values estimated",
           subtitle = sprintf(
             "RMSE = %.3f, R² = %.3f, MAE = %.3f",
-            rv$calib_model$results$RMSE,
-            rv$calib_model$results$Rsquared,
-            rv$calib_model$results$MAE
+            rv$calib_train$results$RMSE,
+            rv$calib_train$results$Rsquared,
+            rv$calib_train$results$MAE
           )
         ) +
         ggplot2::geom_hline(
-          ggplot2::aes(
-            yintercept = unique(ObjLength) / 100,
-            linetype = paste("Reference object", unique(ObjLength), "centimeters")
-          ),
+          ggplot2::aes(yintercept = unique(ObjLength) / 100,
+                       linetype = paste("Object length:", round(unique(ObjLength)/100, 2), "m")),
           colour = 'blue',
           linewidth = 1
         ) +
         ggplot2::geom_hline(
-          ggplot2::aes(yintercept = mean(LcGSD)),
+          ggplot2::aes(yintercept = mean(LcGSD),
+                       linetype = paste("Mean estimated length:", round(mean(LcGSD), 2), "m")),
           colour = 'red',
           linewidth = 1
         ) +
         ggplot2::scale_linetype_manual(
-          name = "Reference",
-          values = c(2, 2),
-          guide = ggplot2::guide_legend(override.aes = list(color = c("red", "blue")))
+          name = "Reference Lines",
+          values = c(1, 1),
+          guide = ggplot2::guide_legend(
+            override.aes = list(
+              colour = c("red", "blue"),
+              linewidth = 1
+            )
+          )
+        ) +
+        ggplot2::theme(
+          legend.position = "bottom",
+          legend.box = "horizontal",
+          legend.title = ggplot2::element_text(face = "bold")
         )
-    )
+
+      if (input$save_plot == "Y") {
+        ggplot2::ggsave(filename = "Variance_plot.png",
+                        plot = p,
+                        path = rv$user_dir,
+                        width = 10,
+                        height = 6)
+      }
+
+      print(p)
+
+    }, error = function(e) {
+      showNotification(paste("Error generating variance graph:", e$message), type = "error")
+      return(NULL)
+    })
+  })
+
+  output$mplot <- shiny::renderPlot({
+    req(input$calib, rv$calib_data)
+
+    tryCatch({
+      if(!"C_Alt" %in% names(rv$calib_data) || !"eGSD" %in% names(rv$calib_data)) {
+        stop("Dados de calibração não contêm colunas necessárias")
+      }
+
+      p <- ggplot2::ggplot(
+        as.data.frame(rv$calib_data),
+        ggplot2::aes(x = as.numeric(C_Alt), y = eGSD)
+      ) +
+        ggplot2::geom_point() +
+        ggplot2::geom_smooth(method = "lm", formula = y ~ x, se = TRUE) +
+        ggplot2::theme_classic() +
+        ggplot2::labs(x = "Altitude (m)", y = "eGSD")
+
+      # Salvar o gráfico se necessário
+      if (input$save_plot == "Y") {
+        ggplot2::ggsave(filename = "Regression_plot.png",
+                        plot = p,
+                        path = rv$user_dir,
+                        width = 10,
+                        height = 6)
+      }
+
+      print(p)
+
+    }, error = function(e) {
+      showNotification(paste("Error generating regression graph:", e$message), type = "error")
+      return(NULL)
+    })
   })
 
   ################
