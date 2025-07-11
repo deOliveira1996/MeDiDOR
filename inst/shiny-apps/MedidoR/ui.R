@@ -119,162 +119,156 @@ ui <- shiny::fluidPage(
         type = "tabs",
         shiny::tabPanel(
           "Instructions",
-          shiny::h1("How to use the app ..."),
-          shiny::p(
-            "The",
-            shiny::strong(shiny::em("MeDiDOR")),
-            "API is a user
-                    interface that was built using the Shiny App, a supplementary
-                    package that enables creating an interactive environment for data
-                    presentation and collection."
-          ),
-          shiny::p(
-            shiny::strong(shiny::em("MeDiDOR")),
-            "was developed with the aim of
-                      optimizing
-                    the analysis of aerial photogrammetry data using pixel scale
-                    calibration models. The target audience for this API primarily
-                    consists of researchers working on monitoring morphometric
-                    patterns of marine megafauna."
-          ),
-          shiny::h2("First steps"),
-          shiny::p(
-            "If the application is opened in an R environment, the working
-                  directory will be set to the directory where the file was stored.
-                    You can change the working directory by clicking",
-            shiny::strong(shiny::em("Change working directory")),
-            "in the",
-            shiny::strong(shiny::em("Input data")),
-            "box."
-          ),
-          shiny::p(
-            shiny::strong(
-              "IMPORTANT !!! When the user opens the application for the
-                           first time, the",
-              shiny::strong("START button"),
-              "must be pressed."
+          shiny::h1("MedidoR User Guide", style = "color: #000000;"),  # Black
+
+          # Introduction Section
+          shiny::div(
+            style = "background-color: #696969; padding: 15px; border-radius: 5px; margin-bottom: 20px;",  # Darkgrey
+            shiny::h2("Introduction", style = "color: #0047AB;"),  # Blue
+            shiny::p(
+              shiny::strong(shiny::em("MedidoR")),
+              "is an interactive photogrammetry tool for marine megafauna research that enables:"
+            ),
+            shiny::tags$ul(
+              shiny::tags$li("Precise morphometric measurements from drone imagery"),
+              shiny::tags$li("Pixel-to-real-world conversion through calibration"),
+              shiny::tags$li("Standardized data collection and quality control")
             )
           ),
-          shiny::p(
-            "Once the directory is set, clicking the START button for the first
-                  time will create a spreadsheet (Measurements.xlsx).
-                    This spreadsheet will be used throughout the applications usage to
-                    store and analyze the collected measurements."
+          # Workflow Overview
+          shiny::div(
+            style = "border-left: 4px solid #0066cc; padding-left: 15px; margin-bottom: 20px; background-color: #696969;",  # Darkgrey
+            shiny::h2("Workflow Overview", style = "color: #0047AB;"),  # Blue
+            shiny::h3("1. Initial Setup", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li("Set working directory via the interface"),
+              shiny::tags$li("Choose segment interval (5% or 10% density)")
+            ),
+
+            shiny::h3("2. Data Management", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li(shiny::strong("First-time users:"), "Create new measurement templates"),
+              shiny::tags$li(shiny::strong("Returning users:"), "Import existing datasets"),
+              shiny::tags$li("Data stored in standardized Excel formats")
+            ),
+
+            shiny::h3("3. Image Processing", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li("Load drone images (JPG/PNG)"),
+              shiny::tags$li("Interactive crop tool for ROI selection")
+            )
           ),
-          shiny::p(
-            "If the application has been started at least once before and/or if
-                  the Measurements.xlsx file is in the working directory,
-                    clicking the",
-            shiny::strong("START"),
-            "button will import the Measurements
-                    .xlsx spreadsheet."
+
+          # Measurement Section
+          shiny::div(
+            style = "background-color: #696969; padding: 15px; border-radius: 5px; margin-bottom: 20px;",  # Darkgrey
+            shiny::h2("Measurement Protocol", style = "color: #0047AB;"),  # Blue
+
+            shiny::h3("Length Measurement", style = "color: #000000;"),  # Black
+            shiny::tags$ol(
+              shiny::tags$li("Click 3 points along body axis (rostrum to caudal notch)"),
+              shiny::tags$li("Automatic generation of:",
+                             shiny::tags$ul(
+                               shiny::tags$li("Main measurement line (red)"),
+                               shiny::tags$li("Perpendicular guides (blue dashed)")
+                             )
+              )
+            ),
+
+            shiny::h3("Width Measurement", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li(shiny::strong("10% intervals:"), "18 width points (9 segments)"),
+              shiny::tags$li(shiny::strong("5% intervals:"), "38 width points (19 segments)"),
+              shiny::tags$li("Click point pairs on each perpendicular line")
+            ),
+
+            shiny::h3("Fluke Measurement", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li("Final 2 clicks to measure tail fluke width"),
+              shiny::tags$li("Highlighted in purple with special marker")
+            ),
+
+            shiny::div(
+              style = "background-color: #ff9933; padding: 10px; border-radius: 5px; margin-top: 10px;",  # Orange
+              shiny::h4("Pro Tips:", style = "color: #000000;"),  # Black text on orange
+              shiny::tags$ul(
+                shiny::tags$li("Use high-contrast images for better point selection"),
+                shiny::tags$li("Zoom in for precise fluke width measurement"),
+                shiny::tags$li("Save frequently with", shiny::strong("Add-IN"))
+              )
+            )
           ),
-          shiny::p(
-            "The",
-            shiny::strong("INPUT"),
-            "button should be used to upload the
-                    desired image."
+
+          # Data & Calibration Section
+          shiny::div(
+            style = "border-top: 2px solid #0066cc; padding-top: 15px; background-color: #696969;",  # Darkgrey
+            shiny::h2("Data Management & Calibration", style = "color: #0047AB;"),  # Blue
+
+            shiny::h3("Metadata Entry", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li("Complete all fields in", shiny::em("Image Parameters")),
+              shiny::tags$li("Essential fields:",
+                             shiny::tags$ul(
+                               shiny::tags$li("Species identification"),
+                               shiny::tags$li("Flight altitude (m)"),
+                               shiny::tags$li("Frame quality score (Good/Moderate/Bad)")
+                             )
+              )
+            ),
+
+            shiny::h3("Calibration Process", style = "color: #000000;"),  # Black
+            shiny::tags$ol(
+              shiny::tags$li("Prepare", shiny::strong("calib.xlsx"), "with:"),
+              shiny::tags$ul(
+                shiny::tags$li("Reference object measurements (pixels)"),
+                shiny::tags$li("Actual lengths (meters)"),
+                shiny::tags$li("Flight altitude data")
+              ),
+              shiny::tags$li("Upload in", shiny::strong("Calibration"), "tab"),
+              shiny::tags$li("Review diagnostic plots for model validation")
+            ),
+
+            shiny::div(
+              style = "background-color: #48494B; padding: 10px; border-radius: 5px; margin: 10px 0;",  # Dimgrey (darker)
+              shiny::h4("File Structure:", style = "color: #000000;"),  # Black
+              shiny::tags$ul(
+                shiny::tags$li(shiny::strong("Measurements.xlsx:"), "Raw collected data"),
+                shiny::tags$li(shiny::strong("Measurements_1.xlsx:"), "Model-adjusted values"),
+                shiny::tags$li("Use *_1.xlsx for final analysis")
+              )
+            )
           ),
-          shiny::p(shiny::strong("IMPORTANT !!!")),
-          shiny::p(
-            "Once the image is selected, a new window will open outside the R
-                  environment with the image plotted in its original dimensions.
-                    At this point, the user should select the area of interest by
-                    clicking and dragging the mouse cursor on the image."
+
+          # Visualization Section
+          shiny::div(
+            style = "margin-top: 20px; background-color: #696969; padding: 15px; border-radius: 5px;",  # Darkgrey
+            shiny::h2("Results Visualization", style = "color: #0047AB;"),  # Blue
+
+            shiny::h3("Measurement Explorer", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li("View/compare individuals in", shiny::strong("Measured whale")),
+              shiny::tags$li("Adjust sample size with", shiny::em("Number of whales"))
+            ),
+
+            shiny::h3("Data Tables", style = "color: #000000;"),  # Black
+            shiny::tags$ul(
+              shiny::tags$li("Full dataset available in", shiny::strong("Dataframe"), "tab"),
+              shiny::tags$li("Search and filter capabilities")
+            )
           ),
-          shiny::p(
-            "In the",
-            shiny::strong(shiny::em("Image parameters")),
-            "box, the user can add
-                    some information to the image, such as the",
-            shiny::strong(shiny::em("Species name")),
-            ",",
-            shiny::strong(shiny::em("Fligth Altitude (m)")),
-            ",",
-            shiny::strong(shiny::em("Take-off Altitude (m)")),
-            "and",
-            shiny::strong(shiny::em("Frame Score"))
-          ),
-          shiny::p(
-            "Once the image is plotted, you can start collecting measurements.
-                  The first three points should be marked along the body of the animal,
-                  starting from the tip of the rostrum and extending to the caudal notch
-                  (or the end of the body if the measured animal is not a cetacean)"
-          ),
-          shiny::p(
-            "Next, red lines will connect the points, and perpendicular lines
-                    (in blue) will define intervals at every 10% of the measured body
-                    length. These lines will serve as guides to define the widths along
-                    the body of the animal. Lastly, the ",
-            shiny::strong(shiny::em("MeDiDOR")),
-            " Will request the user to define
-                    the fluke width measurements, this measurement will be highlighted
-                    with a green line. Each marked point for width
-                    definition will be identified with a yellow star."
-          ),
-          shiny::p(
-            "The",
-            shiny::strong("ADD IN"),
-            "button will save the measurements to
-                    the Measurements.xlsx spreadsheet, and the",
-            shiny::strong("Clear Measurements"),
-            "button will clear the collected
-                    measurements to start a new measurement."
-          ),
-          shiny::p(
-            "After the measurements have been collected and added to the
-                    spreadsheet, it is possible to construct the scale calibration model
-                    to estimate the measurements in meters of the animals in the",
-            shiny::strong(" Calibration "),
-            "tab. For this, it is necessary that the
-                    working directory contains a spreadsheet named 'calib.xlsx.' This
-                    spreadsheet must contain the pixel measurements of the object used
-                    as a reference scale, the  collection date, the flight altitude,
-                    takeoff altitude, and the actual length of the object. With this
-                    information, the",
-            shiny::strong(shiny::em('MeDiDOR')),
-            "will be able
-                    to construct the model."
-          ),
-          shiny::p(
-            "When the model is built, three plots containing the model results
-                    will be generated. The first plot will display diagnostic graphs,
-                    allowing evaluation of whether the model has been statistically
-                    validated. The second graph shows the accuracy results of the model,
-                    including R², RMSE, and MAE values, as well as the distribution and
-                    mean of the estimates of the length of the reference object
-                    considering the model calibration. Finally, the correlation graph
-                    between the model-predicted values and flight altitudes is
-                    presented."
-          ),
-          shiny::p(
-            "In the",
-            shiny::strong(' Measured whale '),
-            "tab, the user can visualize
-                    the distribution of collected measurements for each segment and each
-                    measured animal. Additionally, in this tab, it is possible to define
-                    the number of samples (Number of whales) that the user wants to see
-                    in the histograms."
-          ),
-          shiny::p(
-            "The collected measurements are automatically stored and updated in
-                    the 'Dataframe' tab, where the user can view, search, and define how
-                    many rows will be displayed."
-          ),
-          shiny::p(shiny::strong("IMPORTANT !!!")),
-          shiny::p(
-            "Upon clicking the start button, MedidoR creates the
-                    'Measurements.xlsx' spreadsheet, where the collected measurements
-                    are stored (blank spreadsheet). As the user begins measuring the
-                    animals, another spreadsheet is created ('Measurements_1.xlsx'), and
-                    only in this spreadsheet will the measurements estimated by the
-                    model be contained. This is the spreadsheet that should be used for
-                    data analysis."
-          ),
-          shiny::p(
-            "Now that you've learned how to use",
-            shiny::strong(shiny::em(" MedidoR")),
-            ", have fun!"
+          # Footer
+          shiny::div(
+            style = "text-align: center; margin-top: 30px; padding: 10px; background-color: #696969;",  # Darkgrey
+            shiny::p(
+              style = "font-size: 1.1em; color: #000000;",  # Black
+              "Now that you're familiar with",
+              shiny::strong(shiny::em("MedidoR")),
+              ", start exploring!"
+            ),
+            shiny::p(
+              style = "font-size: 0.9em; color: #000000;",  # Black
+              "For advanced usage, refer to the package documentation"
+            )
           )
         ),
         shiny::tabPanel(
