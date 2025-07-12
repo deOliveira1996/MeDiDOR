@@ -494,8 +494,7 @@ server <- function(input, output, session) {
 
   # Create New Entry function
   create_new_entry <- function(segments) {
-    req(input$drone, input$obs, input$Species,
-        rv$new_date, rv$new_id)
+    req(input$saveBtn)
 
     base_df <- data.frame(
       Drone = as.character(input$drone),
@@ -520,9 +519,10 @@ server <- function(input, output, session) {
       widths <- setNames(as.list(rv$new_widths[1:9]),
                          paste0("WD_", seq(10, 90, by = 10)))
     } else {
-      widths <- setNames(as.list(rv$new_widths[1:19]),
-                         ifelse(rv$new_widths[1], paste0("WD_0", 5),
-                                paste0("WD_", seq(10, 95, by = 5))))
+      widths <- setNames(
+        as.list(rv$new_widths[1:19]),
+        paste0("WD_", sprintf("%02d", seq(5, 95, by = 5)))
+      )
     }
 
     widths <- lapply(widths, as.numeric)
