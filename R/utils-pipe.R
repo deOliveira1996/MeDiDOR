@@ -189,3 +189,19 @@ create_data <- function(segments, path, path2) {
 
   }
 }
+
+#' @title Create measurement template
+#' @description Generates interval measurement templates
+#' @importFrom writexl write_xlsx
+#' @keywords internal
+
+create_data2 <- function(path) {
+  dt <- data.frame(
+    Drone = character(0), Resolution = character(0), ID = character(0),
+    Obs = character(0), Date = character(0), Measured_Date = character(0),
+    TO_Alt = numeric(0), F_Alt = numeric(0), C_Alt = numeric(0),
+    OBJ_L = numeric(0), OBJ_P = numeric(0), sw = numeric(0), iw = numeric(0),
+    flen = numeric(0), Comments = character(0)
+  )
+  writexl::write_xlsx(dt, path, col_names = T)
+}
