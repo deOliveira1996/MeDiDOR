@@ -17,7 +17,26 @@
 #' @importFrom dplyr bind_rows
 #' @export
 
-medidor <- function() {
+medidor_GUI <- function() {
   shiny::runApp(
     appDir = system.file("shiny-apps", "MedidoR", package = "MedidoR"))
+}
+
+#' @title Open MedidoR - Scale calibration measurements API
+#' @description Opens a Shiny application developed to conduct aerial photogrammetry analysis. MedidoR allows you to extract and convert pixel measurements from aerial images collected of marine animals.
+#' @importFrom shiny runApp
+#' @importFrom DT renderDataTable datatable
+#' @importFrom graphics plot points segments
+#' @importFrom htmltools tagList
+#' @importFrom readxl read_xlsx read_excel
+#' @importFrom shiny reactiveValues observeEvent showModal modalDialog textInput actionButton modalButton reactiveVal removeModal req renderPlot reactiveFileReader updateTextInput updateRadioButtons updateNumericInput stopApp runApp
+#' @importFrom shinycssloaders showSpinner
+#' @importFrom writexl write_xlsx
+#' @importFrom imager load.image width height
+#' @importFrom dplyr bind_rows
+#' @export
+
+calib_GUI <- function() {
+  shiny::runApp(
+    appDir = system.file("shiny-apps", "Calib", package = "MedidoR"))
 }

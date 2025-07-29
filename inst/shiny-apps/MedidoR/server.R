@@ -737,7 +737,7 @@ server <- function(input, output, session) {
     req(input$calib, rv$calib_data, rv$calib_train)
 
     tryCatch({
-      if(!"C_Alt" %in% names(rv$calib_data) || !"LcGSD" %in% names(rv$calib_data) || !"ObjLength" %in% names(rv$calib_data)) {
+      if (!"C_Alt" %in% names(rv$calib_data) || !"LcGSD" %in% names(rv$calib_data) || !"ObjLength" %in% names(rv$calib_data)) {
         stop("Calibration data does not contain required columns")
       }
 
@@ -816,7 +816,7 @@ server <- function(input, output, session) {
     req(input$calib, rv$calib_data)
 
     tryCatch({
-      if(!"C_Alt" %in% names(rv$calib_data) || !"eGSD" %in% names(rv$calib_data)) {
+      if (!"C_Alt" %in% names(rv$calib_data) || !"eGSD" %in% names(rv$calib_data)) {
         stop("Dados de calibração não contêm colunas necessárias")
       }
 
