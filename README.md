@@ -9,7 +9,7 @@
 
 MedidoR is an R package designed to assist in the collection and analysis of morphometric measurements from drone-collected images of marine animals, particularly marine mammals. The package implements aerial photogrammetry techniques using scale calibration objects to estimate accurate measurements from images.
 
-Key features: - Interactive Shiny application for measurement collection - Calibration tools for converting pixel measurements to real-world dimensions - Data management and visualization tools - Support for both 5% and 10% segment interval analyses
+Key features: - Interactive Shiny application for measurement collection - Calibration tools for converting pixel measurements to real-world dimensions - Data management and visualization tools - Support for both 5% and 10% segment interval analyses - Interface to collect scale calibration measurements
 
 ## Installation
 
@@ -59,9 +59,7 @@ Documentation For detailed documentation of all functions, see:
 ``` r
 ?medidor_GUI
 ```
-
-markdown
-# calib_gui()
+# NEW FEATURE: The calib_gui() function is now running !!
 
 ## Usage
 
@@ -102,7 +100,8 @@ Repeat for multiple images/angles if needed
 
 Export your calibration data for photogrammetric software
 
-Documentation
+#Documentation
+
 This GUI provides an interactive interface for:
 
 Measuring scale objects in aerial imagery
@@ -158,7 +157,7 @@ Create a new Pull Request
 
 If you use MedidoR in your research, please cite it as:
 
-*Lima de Oliveira, L. (2025). MedidoR (1.1.0). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
+*de Oliveira, L. L. (2025). MedidoR (1.1.0). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
 
 ## License
 
