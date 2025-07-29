@@ -29,7 +29,7 @@ Launching the Application To start the MedidoR Shiny application:
 
 ``` r
 library(MedidoR)
-medidor()
+medidor_GUI()
 ```
 
 Basic Workflow Set up your working directory using the interface
@@ -57,7 +57,75 @@ Export your data for further analysis
 Documentation For detailed documentation of all functions, see:
 
 ``` r
-?medidor
+?medidor_GUI
+```
+
+markdown
+# calib_gui()
+
+## Usage
+
+### Launching the Application
+To start the calibration GUI:
+
+```r
+library(MedidoR)
+calib_GUI()
+```
+
+Basic Workflow
+Set working directory using the interface
+
+Create or import a calibration data frame
+
+Load an image containing your scale object
+
+Crop the image to focus on the scale object
+
+Take measurements:
+
+Click on both ends of your known-length scale object
+
+The measured pixel length will be calculated automatically
+
+Enter metadata:
+
+Drone/camera specifications
+
+Flight parameters (altitude, etc.)
+
+Actual length of the scale object
+
+Save measurements to your calibration data frame
+
+Repeat for multiple images/angles if needed
+
+Export your calibration data for photogrammetric software
+
+Documentation
+This GUI provides an interactive interface for:
+
+Measuring scale objects in aerial imagery
+
+Storing camera/drone parameters
+
+Calculating ground sampling distances
+
+Creating calibration reference tables
+
+Key Features:
+Visual measurement of scale objects
+
+Metadata management for photogrammetry
+
+Data export to standard formats (CSV, Excel)
+
+Support for multiple calibration objects
+
+For advanced usage and parameters, see the function help:
+
+```r
+?calib_GUI
 ```
 
 Package vignettes (coming soon) will provide comprehensive tutorials and use cases.
@@ -90,7 +158,7 @@ Create a new Pull Request
 
 If you use MedidoR in your research, please cite it as:
 
-*Lima de Oliveira, L. (2025). MedidoR (1.0.0.99999). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
+*Lima de Oliveira, L. (2025). MedidoR (1.1.0). Zenodo. <https://doi.org/10.5281/zenodo.15865770>*
 
 ## License
 
