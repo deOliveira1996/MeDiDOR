@@ -22,7 +22,12 @@ dtfilter <- function(x) {
         Obs,
         Comments,
         Drone,
-        Date
+        Date,
+        sw,
+        iw,
+        flen,
+        Resolution,
+        imid
       )
     ) |>
     dplyr::arrange(Measured_Date, by_group = ID)
@@ -50,7 +55,7 @@ show_measurement_modal <- function(message) {
 #' @keywords internal
 
 update_data_table <- function(path) {
-  if(file.exists(path)) {
+  if (file.exists(path)) {
     DT::datatable(
       readxl::read_xlsx(path),
       options = list(
@@ -154,12 +159,14 @@ calib <- function(file = "") {
 #' @keywords internal
 
 create_data <- function(segments, path, path2) {
-  if(segments == 1) {
+  if (segments == 1) {
     dt <- data.frame(
-      Drone = character(0), Obs = character(0), Species = character(0),
-      Date = character(0), Measured_Date = character(0), ID = character(0),
-      Frame_Score = character(0), F_Alt = numeric(0), TO_Alt = numeric(0),
-      C_Alt = numeric(0), BL = numeric(0),
+      Drone = character(0), Resolution = character(0), ID = character(0),
+      Obs = character(0), Species = character(0), Date = character(0),
+      Measured_Date = character(0), TO_Alt = numeric(0), F_Alt = numeric(0),
+      C_Alt = numeric(0),Frame_Score = character(0),
+      sw = numeric(0), iw = numeric(0), flen = numeric(0), imid = character(0),
+      BL = numeric(0),
       WD_10 = numeric(0), WD_20 = numeric(0), WD_30 = numeric(0),
       WD_40 = numeric(0), WD_50 = numeric(0), WD_60 = numeric(0),
       WD_70 = numeric(0), WD_80 = numeric(0), WD_90 = numeric(0),
@@ -171,10 +178,12 @@ create_data <- function(segments, path, path2) {
 
   } else {
     dt <- data.frame(
-      Drone = character(0), Obs = character(0), Species = character(0),
-      Date = character(0), Measured_Date = character(0), ID = character(0),
-      Frame_Score = character(0), F_Alt = numeric(0), TO_Alt = numeric(0),
-      C_Alt = numeric(0), BL = numeric(0),
+      Drone = character(0), Resolution = character(0), ID = character(0),
+      Obs = character(0), Species = character(0), Date = character(0),
+      Measured_Date = character(0), TO_Alt = numeric(0), F_Alt = numeric(0),
+      C_Alt = numeric(0),Frame_Score = character(0),
+      sw = numeric(0), iw = numeric(0), flen = numeric(0), imid = character(0),
+      BL = numeric(0),
       WD_05 = numeric(0), WD_10 = numeric(0), WD_15 = numeric(0),
       WD_20 = numeric(0), WD_25 = numeric(0), WD_30 = numeric(0),
       WD_35 = numeric(0), WD_40 = numeric(0), WD_45 = numeric(0),
@@ -186,7 +195,6 @@ create_data <- function(segments, path, path2) {
     )
     writexl::write_xlsx(dt, path)
     writexl::write_xlsx(dtfilter(dt), path2)
-
   }
 }
 
@@ -201,7 +209,7 @@ create_data2 <- function(path) {
     Obs = character(0), Date = character(0), Measured_Date = character(0),
     TO_Alt = numeric(0), F_Alt = numeric(0), C_Alt = numeric(0),
     OBJ_L = numeric(0), OBJ_P = numeric(0), sw = numeric(0), iw = numeric(0),
-    flen = numeric(0), Comments = character(0)
+    flen = numeric(0), imid = character(0), Comments = character(0)
   )
   writexl::write_xlsx(dt, path, col_names = T)
 }

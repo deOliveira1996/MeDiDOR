@@ -324,14 +324,17 @@ server <- function(input, output, session) {
     rv$new_iw = as.numeric(rv$img_width)
     rv$new_sw = as.numeric(input$sw)
     rv$new_flen = as.numeric(input$flen)
-    rv$new_id = as.character(input$ImageID)
+    rv$new_id = paste(as.character(input$Date),
+                      as.character(input$ImageID),
+                      c(as.numeric(input$alt) + as.numeric(input$takeof)),
+                      sep = "-")
     rv$new_date = as.character(input$Date)
     rv$new_f_alt = as.numeric(input$alt)
     rv$new_to_alt = as.numeric(input$takeof)
     rv$new_calti = as.numeric(input$alt) + as.numeric(input$takeof)
-    rv$new_id = as.character(input$ImageID)
     rv$new_drone = as.character(input$drone)
     rv$new_objL = as.numeric(input$objL)
+    rv$new_imid = as.character(input$file$name)
   })
 
   ############################ Save  block ############################
@@ -355,6 +358,7 @@ server <- function(input, output, session) {
       sw = as.numeric(rv$new_sw),
       iw = as.numeric(rv$new_iw),
       flen = as.numeric(rv$new_flen),
+      imid = as.character(rv$new_imid),
       Comments = as.character(input$comments)
     )
 
@@ -370,7 +374,7 @@ server <- function(input, output, session) {
           dplyr::across(c(F_Alt, TO_Alt, C_Alt, OBJ_L,
                           OBJ_P, sw, iw, flen), as.numeric),
           dplyr::across(c(Drone, Obs, Resolution, Date,
-                          Measured_Date, ID, Comments), as.character)
+                          Measured_Date, ID, Comments, imid), as.character)
         )
 
       rv$current_data <- dplyr::bind_rows(rv$main_data, new_entry)
@@ -449,6 +453,7 @@ server <- function(input, output, session) {
 
     # Novos dados
     rv$new_id = character()
+    rv$new_imid = character()
     rv$new_objL = numeric()
     rv$new_objP = numeric()
     rv$new_date = character()

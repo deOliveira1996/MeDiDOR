@@ -48,6 +48,8 @@ ui <- shiny::fluidPage(
                            placeholder = "Given Species name"),
           shiny::textInput("ImageID", "Image-ID:",
                            placeholder = "Given the Image-ID"),
+          shiny::textInput("ImageRES", "Image Resolution:",
+                           placeholder = "Given the Image Resolution")
         )
       ),
         shiny::fluidRow(
@@ -64,7 +66,13 @@ ui <- shiny::fluidPage(
             shiny::br(),
             shiny::numericInput("takeof",
                                 "Take-off Altitude (m)",
-                                value = 0)
+                                value = 0),
+            shiny::textInput("Date",
+                             "Image collection date: YYYY-MM-DD",
+                             value = ""),
+            shiny::textInput("obs",
+                             "Observer:",
+                             value = "")
           ),
           shiny::column(
             width = 6,
@@ -80,31 +88,24 @@ ui <- shiny::fluidPage(
                 ),
               selected = 4
             ),
+            shiny::textInput("sw", "Camera sensor width (mm):",
+                             placeholder = "Sensor width (mm)",
+                             value = NULL),
+            shiny::textInput("flen", "Camera focal length (mm):",
+                             placeholder = "Focal length (mm)",
+                             value = NULL),
             shiny::textInput("drone",
                              "Drone model:",
-                             value = "")
+                             value = NULL)
           ),
         ),
 
         shiny::fluidRow(
-          shiny::column(
-            width = 6,
-            shiny::textInput("Date",
-                             "Image collection date: YYYY-MM-DD",
-                             value = "")
-          ),
-          shiny::column(width = 6,
-                        shiny::textInput("obs",
-                                         "Observer:",
-                                         value = "")),
-          shiny::column(
-            width = 12,
-            shiny::textAreaInput(
-              "comments",
-              "Comments here:",
-              value = "",
-              resize = "none"
-            )
+          shiny::textAreaInput(
+            "comments",
+            "Comments here:",
+            value = "",
+            resize = "none"
           )
         ),
 
@@ -123,7 +124,7 @@ ui <- shiny::fluidPage(
 
           # Introduction Section
           shiny::div(
-            style = "background-color: #696969; padding: 15px; border-radius: 5px; margin-bottom: 20px;",  # Darkgrey
+            style = "background-color: #0047AB; padding: 15px; border-radius: 5px; margin-bottom: 20px;",  # Darkgrey
             shiny::h2("Introduction", style = "color: #0047AB;"),  # Blue
             shiny::p(
               shiny::strong(shiny::em("MedidoR")),
