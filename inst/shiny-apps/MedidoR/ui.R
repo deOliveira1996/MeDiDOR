@@ -120,7 +120,7 @@ ui <- shiny::fluidPage(
         type = "tabs",
         shiny::tabPanel(
           "Instructions",
-          shiny::h1("MedidoR User Guide", style = "color: #000000;"),  # Black
+          shiny::h1("MedidoR User Guide", style = "color: #0047AB;"),  # Black
 
           # Introduction Section
           shiny::div(
@@ -289,10 +289,11 @@ ui <- shiny::fluidPage(
               )
             )),
           uiOutput("add_status"),
+          shiny::actionButton("saveBtn", "ADD IN", width = "100%"),
           # Modified button layout
           div(style = "margin-top: 20px;",
               shiny::actionButton("crop", "CROP", width = "32%"),
-              shiny::actionButton("saveBtn", "ADD IN", width = "32%"),
+              shiny::actionButton("undo", "Undo", width = "32%"),
               shiny::actionButton("clearBtn", "CLEAR", width = "32%")
           )
         ),

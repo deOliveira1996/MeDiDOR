@@ -958,6 +958,32 @@ server <- function(input, output, session) {
     }
   })
 
+  shiny::observeEvent(input$undo, {
+    tryCatch({
+
+      if (nrow(rv$length_measurements) > 0 & nrow(rv$width_measurements) == 0) {
+
+        rv$length_measurements <- rv$length_measurements[-nrow(rv$length_measurements),]
+      }
+
+      if (nrow(rv$width_measurements) > 0 & nrow(rv$fw_measurements) == 0) {
+
+        rv$width_measurements <- rv$width_measurements[-nrow(rv$width_measurements),]
+      }
+
+      if (nrow(rv$fw_measurements) > 0 & nrow(rv$fw_measurements) < 2) {
+
+        rv$fw_measurements <- rv$fw_measurements[-nrow(rv$fw_measurements),]
+      }
+      return(TRUE)
+
+    }, error = function(e) {
+      showNotification(paste("Error:", e$message),
+                       type = "error")
+      return(FALSE)
+    })
+  })
+
   ################
   # Close button #
   ################
