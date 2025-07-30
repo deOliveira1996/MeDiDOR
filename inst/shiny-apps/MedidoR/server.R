@@ -42,6 +42,9 @@ server <- function(input, output, session) {
     new_widths = numeric(),
     new_fw = numeric(),
     new_drone = character(),
+    new_sw = numeric(),
+    new_iw = numeric(),
+    new_flen = numeric(),
 
     # Imagem
     current_image = NULL,
@@ -96,48 +99,97 @@ server <- function(input, output, session) {
 
   # Data frame management
   shiny::observeEvent(input$create, {
-    req(rv$user_dir, rv$segments)
+    tryCatch({
+      req(rv$user_dir, rv$segments)
 
-    dir_path <- MedidoR:::get_directory_path(rv$segments, rv$user_dir)
-    paths <- MedidoR:::get_file_paths(dir_path, rv$segments)
+      dir_path <- MedidoR:::get_directory_path(rv$segments, rv$user_dir)
+      paths <- MedidoR:::get_file_paths(dir_path, rv$segments)
 
-    rv$main <- paths$main
-    rv$secondary <- paths$secondary
-    rv$dir_path <- dir_path
+      rv$main <- paths$main
+      rv$secondary <- paths$secondary
+      rv$dir_path <- dir_path
 
-    if (!dir.exists(dir_path)) {
-      dir.create(dir_path)
-      MedidoR:::create_data(
-        segments = rv$segments,
-        path = rv$main,
-        path2 = rv$secondary
-      )
-      shiny::showModal(shiny::modalDialog(
-        title = "Success",
-        paste(
-          ifelse(rv$segments == 1, "10%", "5%"),
-          "interval dataframe created"
-        ),
-        footer = shiny::modalButton("OK")
-      ))
-
-      rv$current_dir <- dir_path
-
-      rv$main_data <- readxl::read_xlsx(path = rv$main, col_names = T)
-
-      output$mTable <- DT::renderDataTable({
-        MedidoR:::update_data_table(rv$secondary)
-      })
-
-    } else {
-      shiny::showModal(
-        modalDialog(
-          title = "Info",
-          "Dataframe already exists, please IMPORT instead",
-          footer = shiny::modalButton("OK")
+      if (!dir.exists(dir_path)) {
+        dir.create(dir_path)
+        MedidoR:::create_data(
+          segments = rv$segments,
+          path = rv$main,
+          path2 = rv$secondary
         )
-      )
-    }
+        shiny::showModal(shiny::modalDialog(
+          title = "Success",
+          paste(
+            ifelse(rv$segments == 1, "10%", "5%"),
+            "interval dataframe created"
+          ),
+          footer = shiny::modalButton("OK")
+        ))
+
+        rv$current_dir <- dir_path
+
+        rv$main_data <- readxl::read_xlsx(path = rv$main, col_names = T)
+
+        output$mTable <- DT::renderDataTable({
+          MedidoR:::update_data_table(rv$secondary)
+        })
+
+      } else {
+        shiny::showModal(
+          modalDialog(
+            title = "Info",
+            "Dataframe already exists, please IMPORT instead",
+            footer = shiny::modalButton("OK")
+          )
+        )
+      }
+      return(TRUE)
+    }, error = function(e){
+      showNotification(paste("Error:", e$message), type = "error")
+      return(FALSE)
+    })
+  })
+
+  # Import  block
+
+  shiny::observeEvent(input$import, {
+   tryCatch({
+     req(rv$user_dir, rv$segments)
+     dir_path <- MedidoR:::get_directory_path(rv$segments, rv$user_dir)
+     paths <- MedidoR:::get_file_paths(dir_path, rv$segments)
+
+     rv$main <- paths$main
+     rv$secondary <- paths$secondary
+     rv$dir_path <- dir_path
+
+     if (file.exists(rv$secondary)) {
+       rv$main_data <- readxl::read_xlsx(rv$main)
+
+       shiny::showModal(
+         shiny::modalDialog(
+           title = "Success",
+           "Dataframe imported",
+           footer = shiny::modalButton("OK")
+         )
+       )
+
+       output$mTable <- DT::renderDataTable({
+         MedidoR:::update_data_table(rv$secondary)
+       })
+
+     } else {
+       shiny::showModal(
+         shiny::modalDialog(
+           title = "Error",
+           "Dataframe not found, please CREATE instead",
+           footer = shiny::modalButton("OK")
+         )
+       )
+     }
+     return(TRUE)
+   }, error = function(e) {
+     showNotification(paste("Error:", e$message), type = "error")
+     return(FALSE)
+   })
   })
 
   shiny::observeEvent(input$score, {
@@ -153,43 +205,6 @@ server <- function(input, output, session) {
     }
     if (input$score == 4) {
       rv$new_score <- "Not assigned"
-    }
-  })
-
-  # Import  block
-
-  shiny::observeEvent(input$import, {
-    req(rv$user_dir, rv$segments)
-    dir_path <- MedidoR:::get_directory_path(rv$segments, rv$user_dir)
-    paths <- MedidoR:::get_file_paths(dir_path, rv$segments)
-
-    rv$main <- paths$main
-    rv$secondary <- paths$secondary
-    rv$dir_path <- dir_path
-
-    if (file.exists(rv$secondary)) {
-      rv$main_data <- readxl::read_xlsx(rv$main)
-
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Success",
-          "Dataframe imported",
-          footer = shiny::modalButton("OK")
-        )
-      )
-
-      output$mTable <- DT::renderDataTable({
-        MedidoR:::update_data_table(rv$secondary)
-      })
-
-    } else {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Error",
-          "Dataframe not found, please CREATE instead",
-          footer = shiny::modalButton("OK")
-        )
-      )
     }
   })
 
@@ -488,6 +503,23 @@ server <- function(input, output, session) {
     } else {
       shiny::updateActionButton(session, "saveBtn", disabled = FALSE)
     }
+
+    rv$new_res = as.character(input$ImageRES)
+    rv$new_iw = as.numeric(rv$img_width)
+    rv$new_sw = as.numeric(input$sw)
+    rv$new_flen = as.numeric(input$flen)
+    rv$new_id = paste(as.character(input$Date),
+                      as.character(input$ImageID),
+                      c(as.numeric(input$alt) + as.numeric(input$takeof)),
+                      sep = "-")
+    rv$new_date = as.character(input$Date)
+    rv$new_f_alt = as.numeric(input$alt)
+    rv$new_to_alt = as.numeric(input$takeof)
+    rv$new_calti = as.numeric(input$alt) + as.numeric(input$takeof)
+    rv$new_id = as.character(input$ImageID)
+    rv$new_drone = as.character(input$drone)
+    rv$new_objL = as.numeric(input$objL)
+    rv$new_imid = as.character(input$file$name)
   })
 
   ############################ Save  block ############################
@@ -498,16 +530,21 @@ server <- function(input, output, session) {
 
     base_df <- data.frame(
       Drone = as.character(input$drone),
+      Resolution = as.character(input$ImageRES),
+      ID = as.character(rv$new_id),
       Obs = as.character(input$obs),
       Species = as.character(input$Species),
       Date = as.character(rv$new_date),
       Measured_Date = format(as.POSIXct(Sys.time()),
                              "%Y-%m-%d %H:%M:%S"),
-      ID = as.character(rv$new_id),
-      Frame_Score = as.character(rv$new_score),
-      F_Alt = as.numeric(rv$new_f_alt),
       TO_Alt = as.numeric(rv$new_to_alt),
+      F_Alt = as.numeric(rv$new_f_alt),
       C_Alt = as.numeric(rv$new_calti),
+      Frame_Score = as.character(rv$new_score),
+      sw = as.numeric(rv$new_sw),
+      iw = as.numeric(rv$new_iw),
+      flen = as.numeric(rv$new_flen),
+      imid = as.character(rv$new_imid),
       cGSD = NA_real_,
       EstLength = NA_real_,
       Comments = as.character(input$comments),
@@ -542,10 +579,11 @@ server <- function(input, output, session) {
 
       rv$main_data <- readxl::read_xlsx(rv$main, col_names = T) |>
         dplyr::mutate(
-          dplyr::across(c(F_Alt, TO_Alt, C_Alt, BL, starts_with("WD_"),
+          dplyr::across(c(F_Alt, TO_Alt, C_Alt, sw, iw, flen,
+                          BL, starts_with("WD_"),
                           cGSD, EstLength), as.numeric),
           dplyr::across(c(Drone, Obs, Species, Date, Measured_Date, ID,
-                          Frame_Score, Comments), as.character)
+                          Frame_Score, Comments, Resolution, imid), as.character)
         )
 
       rv$current_data <- dplyr::bind_rows(rv$main_data, new_entry)
@@ -574,17 +612,23 @@ server <- function(input, output, session) {
 
   # Save system ----
   shiny::observeEvent(input$saveBtn, {
-    req(rv$main_data, rv$new_fw)
+    tryCatch({
+      req(rv$main_data, rv$new_fw)
 
-    # Criar nova entrada
-    new_entry <- create_new_entry(rv$segments)
+      # Criar nova entrada
+      new_entry <- create_new_entry(rv$segments)
 
-    save_data(new_entry = new_entry)
+      save_data(new_entry = new_entry)
 
-    rv$click_save <- TRUE
+      rv$click_save <- TRUE
 
-    output$mTable <- DT::renderDataTable({
-      MedidoR:::update_data_table(rv$secondary)
+      output$mTable <- DT::renderDataTable({
+        MedidoR:::update_data_table(rv$secondary)
+      })
+      return(TRUE)
+    }, error = function(e) {
+      showNotification(paste("Error when saving:", e$message), type = "error")
+      return(FALSE)
     })
   })
 
@@ -624,6 +668,7 @@ server <- function(input, output, session) {
     rv$fw_measurements <- data.frame()
     # Novos dados
     rv$new_id = character()
+    rv$new_imid = character()
     rv$new_score = character()
     rv$new_date = character()
     rv$new_f_alt = numeric()
@@ -911,6 +956,32 @@ server <- function(input, output, session) {
                          type = "error")
       })
     }
+  })
+
+  shiny::observeEvent(input$undo, {
+    tryCatch({
+
+      if (nrow(rv$length_measurements) > 0 & nrow(rv$width_measurements) == 0) {
+
+        rv$length_measurements <- rv$length_measurements[-nrow(rv$length_measurements),]
+      }
+
+      if (nrow(rv$width_measurements) > 0 & nrow(rv$fw_measurements) == 0) {
+
+        rv$width_measurements <- rv$width_measurements[-nrow(rv$width_measurements),]
+      }
+
+      if (nrow(rv$fw_measurements) > 0 & nrow(rv$fw_measurements) < 2) {
+
+        rv$fw_measurements <- rv$fw_measurements[-nrow(rv$fw_measurements),]
+      }
+      return(TRUE)
+
+    }, error = function(e) {
+      showNotification(paste("Error:", e$message),
+                       type = "error")
+      return(FALSE)
+    })
   })
 
   ################
