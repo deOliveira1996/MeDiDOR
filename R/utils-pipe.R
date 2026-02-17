@@ -120,8 +120,7 @@ update_measurements <- function(main_path, secondary_path,
     # Filtrar e arredondar
     measurements_1 <- current_data_1 |>
       dplyr::mutate(
-        dplyr::across(c(8:12), ~ round(., 2)),
-        dplyr::across(15, ~ round(., 2))
+        dplyr::across(where(is.numeric), ~ round(., 2))
       )
 
     writexl::write_xlsx(x = current_data, path = main_path,
