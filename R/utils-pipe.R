@@ -108,14 +108,14 @@ update_measurements <- function(main_path, secondary_path,
     current_data_1$EstLength <- current_data_1$cGSD * current_data_1$Pixel
 
     fill_data <- current_data_1 |>
-      dplyr::group_by(ID) |>
+      dplyr::group_by(imid) |>
       dplyr::filter(Segments == "BL") |>
       dplyr::summarise(cGSD = dplyr::first(cGSD),
                        EstLength = dplyr::first(EstLength))
 
     current_data <- current_data |>
       dplyr::select(-cGSD, -EstLength) |>
-      dplyr::left_join(fill_data, by = "ID")
+      dplyr::left_join(fill_data, by = "imid")
 
     # Filtrar e arredondar
     measurements_1 <- current_data_1 |>

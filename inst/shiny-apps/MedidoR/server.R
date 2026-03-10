@@ -909,7 +909,8 @@ server <- function(input, output, session) {
                                            col_names = TRUE) |>
           dplyr::mutate(
             Date_mmd = format(as.Date(Date), "%m-%d"),
-            ID_combined = paste(ID, " (", Date_mmd, ")", sep = "")
+            ID_combined = paste(ID, " (", Date_mmd, ") ",
+                                format(lubridate::as_datetime(Measured_Date), "%H:%M:%S"), sep = "")
           )
 
         if (!"ID" %in% names(measurements) || !"Date" %in% names(measurements)) {
