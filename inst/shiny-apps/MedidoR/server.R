@@ -684,21 +684,36 @@ server <- function(input, output, session) {
       if (input$app_mode == "free") {
         req(rv$new_bl, rv$current_free_id)
 
-        # Estrutura base para dados livres
+        # Funções de segurança para evitar vetores de tamanho 0
+        safe_char <- function(x) { if (is.null(x) || length(x) == 0) NA_character_ else as.character(x) }
+        safe_num <- function(x) { if (is.null(x) || length(x) == 0) NA_real_ else as.numeric(x) }
+
+        # Estrutura base para dados livres com preenchimento seguro
         new_entry <- data.frame(
-          Drone = as.character(input$drone), Resolution = as.character(input$ImageRES),
-          ID = as.character(rv$new_id), Obs = as.character(input$obs),
-          Species = as.character(input$Species), Date = as.character(rv$new_date),
+          Drone = safe_char(input$drone),
+          Resolution = safe_char(input$ImageRES),
+          ID = safe_char(rv$new_id),
+          Obs = safe_char(input$obs),
+          Species = safe_char(input$Species),
+          Date = safe_char(rv$new_date),
           Measured_Date = format(as.POSIXct(Sys.time()), "%Y-%m-%d %H:%M:%S"),
-          TO_Alt = as.numeric(rv$new_to_alt), F_Alt = as.numeric(rv$new_f_alt),
-          C_Alt = as.numeric(rv$new_calti), Frame_Score = as.character(rv$new_score),
-          sw = as.numeric(rv$new_sw), iw = as.numeric(rv$new_iw),
-          flen = as.numeric(rv$new_flen), imid = as.character(rv$new_imid),
-          Segments = as.character(rv$current_free_id), Pixel = as.numeric(rv$new_bl),
-          cGSD = NA_real_, EstLength = NA_real_, Comments = as.character(input$comments)
+          TO_Alt = safe_num(rv$new_to_alt),
+          F_Alt = safe_num(rv$new_f_alt),
+          C_Alt = safe_num(rv$new_calti),
+          Frame_Score = safe_char(rv$new_score),
+          sw = safe_num(rv$new_sw),
+          iw = safe_num(rv$new_iw),
+          flen = safe_num(rv$new_flen),
+          imid = safe_char(rv$new_imid),
+          Segments = safe_char(rv$current_free_id),
+          Pixel = safe_num(rv$new_bl),
+          cGSD = NA_real_,
+          EstLength = NA_real_,
+          Comments = safe_char(input$comments),
+          stringsAsFactors = FALSE
         )
 
-        # CORREÇÃO: Forçar tipagem das variáveis lidas da planilha vazia
+        # Forçar tipagem das variáveis lidas da planilha vazia
         rv$main_data <- readxl::read_xlsx(rv$main, col_names = TRUE) |>
           dplyr::mutate(
             dplyr::across(c(TO_Alt, F_Alt, C_Alt, sw, iw, flen, Pixel, cGSD, EstLength), as.numeric),
@@ -725,15 +740,15 @@ server <- function(input, output, session) {
 
       } else {
         # Rotina nativa para Morphometrics
-        new_entry <- create_new_entry(rv$segments)
-        save_data(new_entry = new_entry)
+        new_entry <- MedidoR:::create_new_entry(rv$segments)
+        MedidoR:::save_data(new_entry = new_entry)
         rv$click_save <- TRUE
       }
 
       output$mTable <- DT::renderDataTable({ MedidoR:::update_data_table(rv$secondary) })
       return(TRUE)
     }, error = function(e) {
-      showNotification(paste("Error when saving:", e$message), type = "error")
+      shiny::showNotification(paste("Error when saving:", e$message), type = "error")
       return(FALSE)
     })
   })
