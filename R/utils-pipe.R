@@ -69,23 +69,50 @@ update_data_table <- function(path) {
 
 #' @title Get the directory paths
 #' @keywords internal
-
-# Unified directory handler
 get_directory_path <- function(segments, user_dir) {
-  dir_name <- ifelse(segments == 1, "10%_interval", "05%_interval")
+  dir_name <- if (segments == 1) {
+    "10%_interval"
+  } else if (segments == 2) {
+    "05%_interval"
+  } else if (segments == 3) {
+    "Free_measurements"
+  }
   normalizePath(file.path(user_dir, dir_name), mustWork = FALSE)
 }
 
 #' @title Generate the file paths for data
 #' @keywords internal
-
-# Unified file path generator
 get_file_paths <- function(dir_path, segments) {
-  base_name <- ifelse(segments == 1, "Measurements_10", "Measurements_05")
+  base_name <- if (segments == 1) {
+    "Measurements_10"
+  } else if (segments == 2) {
+    "Measurements_05"
+  } else if (segments == 3) {
+    "Free_Measurements"
+  }
+
   list(
     main = file.path(dir_path, paste0(base_name, ".xlsx")),
     secondary = file.path(dir_path, paste0(base_name, "_1.xlsx"))
   )
+}
+
+#' @title Create free measurement template
+#' @description Generates free measurement templates
+#' @importFrom writexl write_xlsx
+#' @keywords internal
+create_data_free <- function(path, path2) {
+  dt <- data.frame(
+    Drone = character(0), Resolution = character(0), ID = character(0),
+    Obs = character(0), Species = character(0), Date = character(0),
+    Measured_Date = character(0), TO_Alt = numeric(0), F_Alt = numeric(0),
+    C_Alt = numeric(0), Frame_Score = character(0),
+    sw = numeric(0), iw = numeric(0), flen = numeric(0), imid = character(0),
+    Segments = character(0), Pixel = numeric(0),
+    cGSD = numeric(0), EstLength = numeric(0), Comments = character(0)
+  )
+  writexl::write_xlsx(dt, path)
+  writexl::write_xlsx(dt, path2) # Mantido para padronização de pipeline
 }
 
 #' @title Update the data with calibration model estimates

@@ -18,11 +18,19 @@ ui <- shiny::fluidPage(
                      ".bmp", ".gif", ".tiff")
         ),
         shiny::radioButtons(
-          "segments",
-          "Select the desired width interval to CREATE or IMPORT the dataset:",
-          choices =
-            list("10% interval" = 1, "05% interval" = 2),
-          selected = 2
+          "app_mode",
+          "Select Measurement Mode:",
+          choices = list("Morphometrics" = "morpho", "Free Measurements" = "free"),
+          selected = "morpho"
+        ),
+        shiny::conditionalPanel(
+          condition = "input.app_mode == 'morpho'",
+          shiny::radioButtons(
+            "segments",
+            "Select the desired width interval to CREATE or IMPORT the dataset:",
+            choices = list("10% interval" = 1, "05% interval" = 2),
+            selected = 2
+          )
         ),
         shiny::fluidRow(
           column(width = 6,
@@ -270,6 +278,13 @@ ui <- shiny::fluidPage(
               style = "font-size: 0.9em; color: #000000;",  # Black
               "For advanced usage, refer to the package documentation"
             )
+          ),
+          shiny::h3("Free Measurement Mode", style = "color: #000000;"),
+          shiny::tags$ul(
+            shiny::tags$li("Toggle the switch to 'Free Measurements' in the sidebar."),
+            shiny::tags$li("Click 'New Measurement' to define an ID/Name for your specific target."),
+            shiny::tags$li("Click two points on the image to measure the defined segment."),
+            shiny::tags$li("Hit 'ADD IN' to save the coordinate distance to the spreadsheet.")
           )
         ),
         shiny::tabPanel(
@@ -289,6 +304,11 @@ ui <- shiny::fluidPage(
               )
             )),
           uiOutput("add_status"),
+
+          shiny::conditionalPanel(
+            condition = "input.app_mode == 'free'",
+            shiny::actionButton("new_free_measure", "New Measurement", width = "100%", style = "margin-bottom: 10px; background-color: #28a745; border-color: #28a745;")
+          ),
           shiny::actionButton("saveBtn", "ADD IN", width = "100%"),
           # Modified button layout
           div(style = "margin-top: 20px;",
