@@ -62,7 +62,10 @@ server <- function(input, output, session) {
     calib_path = NULL,
     calib_data = NULL,
     calib_model = NULL,
-    calib_train = NULL
+    calib_train = NULL,
+    # Modo livre
+    free_points = data.frame(x = numeric(), y = numeric()),
+    current_free_id = character()
   )
 
   ############################ Path  block ############################
@@ -81,9 +84,13 @@ server <- function(input, output, session) {
     )
   })
 
-  # Assign segments
-  observeEvent(input$segments, {
-    rv$segments <- input$segments
+  # Assign segments dynamically
+  observeEvent(c(input$segments, input$app_mode), {
+    if (input$app_mode == "free") {
+      rv$segments <- 3
+    } else {
+      rv$segments <- input$segments
+    }
   })
 
   # Confirmation  block
@@ -111,17 +118,27 @@ server <- function(input, output, session) {
 
       if (!dir.exists(dir_path)) {
         dir.create(dir_path)
-        MedidoR:::create_data(
-          segments = rv$segments,
-          path = rv$main,
-          path2 = rv$secondary
-        )
-        shiny::showModal(shiny::modalDialog(
-          title = "Success",
-          paste(
+
+        # --- LÓGICA CONDICIONAL DE CRIAÇÃO ---
+        if (rv$segments == 3) {
+          MedidoR:::create_data_free(path = rv$main, path2 = rv$secondary)
+          modal_msg <- "Free measurements dataframe created"
+        } else {
+          MedidoR:::create_data(
+            segments = rv$segments,
+            path = rv$main,
+            path2 = rv$secondary
+          )
+          modal_msg <- paste(
             ifelse(rv$segments == 1, "10%", "5%"),
             "interval dataframe created"
-          ),
+          )
+        }
+        # -------------------------------------
+
+        shiny::showModal(shiny::modalDialog(
+          title = "Success",
+          modal_msg,
           footer = shiny::modalButton("OK")
         ))
 
@@ -135,7 +152,7 @@ server <- function(input, output, session) {
 
       } else {
         shiny::showModal(
-          modalDialog(
+          shiny::modalDialog(
             title = "Info",
             "Dataframe already exists, please IMPORT instead",
             footer = shiny::modalButton("OK")
@@ -378,6 +395,25 @@ server <- function(input, output, session) {
     }
   }
 
+  # --- Free Measurement Logic ---
+  shiny::observeEvent(input$new_free_measure, {
+    shiny::showModal(shiny::modalDialog(
+      title = "New Free Measurement",
+      shiny::textInput("free_measure_id", "Enter Measurement Name/ID (e.g., Pectoral_Fin):"),
+      footer = shiny::tagList(
+        shiny::actionButton("start_free_measure", "Confirm", class = "btn-primary"),
+        shiny::modalButton("Cancel")
+      )
+    ))
+  })
+
+  shiny::observeEvent(input$start_free_measure, {
+    req(input$free_measure_id)
+    rv$current_free_id <- input$free_measure_id
+    rv$free_points <- data.frame(x = numeric(), y = numeric())
+    shiny::removeModal()
+  })
+
   # Rendering plot
   output$imagePlot <- shiny::renderPlot({
     req(rv$current_image, rv$segments)
@@ -449,6 +485,14 @@ server <- function(input, output, session) {
     } else {
       plot(rv$current_image, main = "Select area of interest", axes = T)
     }
+
+    # Lógica visual para Free Measurements
+    if (input$app_mode == "free" && nrow(rv$free_points) > 0) {
+      graphics::points(rv$free_points$x, rv$free_points$y, col = "cyan", pch = 16, cex = 1.5)
+      if (nrow(rv$free_points) > 1) {
+        graphics::lines(rv$free_points$x, rv$free_points$y, col = "cyan", lwd = 2)
+      }
+    }
   })
 
   ############################ Plot click  block ############################
@@ -456,35 +500,57 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$plot_click, {
     req(input$crop, rv$crop_status)
 
-    if (nrow(rv$length_measurements) != 3) {
-      rv$length_measurements <- rbind(
-        rv$length_measurements,
-        data.frame(
-          Length_X = input$plot_click$x,
-          Length_Y = input$plot_click$y
-        )
-      )
-      if (nrow(rv$length_measurements) == 3) {
-        MedidoR:::show_measurement_modal("Length measurements completed. Take widths.")
-        shiny::showModal(
-          shiny::modalDialog(
-            title = "Measurement Progress",
-            HTML(
-              "<b>Length measurement complete!</b><br>
-             Click along the perpendicular lines to measure widths."
-            ),
-            footer = shiny::modalButton("Continue"),
-            easyClose = TRUE
+    if (input$app_mode == "free") {
+      if (length(rv$current_free_id) > 0 && rv$current_free_id != "") {
+        # Adiciona o novo ponto ao dataframe reativo
+        rv$free_points <- rbind(rv$free_points, data.frame(x = input$plot_click$x, y = input$plot_click$y))
+
+        # Se houver mais de um ponto, calcula a distância cumulativa de todos os segmentos
+        if (nrow(rv$free_points) > 1) {
+          distances <- sqrt(diff(rv$free_points$x)^2 + diff(rv$free_points$y)^2)
+          rv$new_bl <- sum(distances) # Armazena o somatório dos pixels
+          rv$add_status <- FALSE      # Libera o botão ADD-IN
+
+          shiny::showNotification(
+            sprintf("Points: %d | Total Length: %.2f pixels", nrow(rv$free_points), rv$new_bl),
+            type = "message",
+            duration = 2
           )
-        )
+        }
+      } else {
+        shiny::showNotification("Please click 'New Measurement' first to assign an ID.", type = "warning")
       }
     } else {
-      target <- ifelse(rv$segments == 1, 18, 38)
-      if (nrow(rv$width_measurements) < target) {
-        handle_width_measurement(input$plot_click$x, input$plot_click$y)
+      if (nrow(rv$length_measurements) != 3) {
+        rv$length_measurements <- rbind(
+          rv$length_measurements,
+          data.frame(
+            Length_X = input$plot_click$x,
+            Length_Y = input$plot_click$y
+          )
+        )
+        if (nrow(rv$length_measurements) == 3) {
+          MedidoR:::show_measurement_modal("Length measurements completed. Take widths.")
+          shiny::showModal(
+            shiny::modalDialog(
+              title = "Measurement Progress",
+              HTML(
+                "<b>Length measurement complete!</b><br>
+               Click along the perpendicular lines to measure widths."
+              ),
+              footer = shiny::modalButton("Continue"),
+              easyClose = TRUE
+            )
+          )
+        }
       } else {
-        handle_fluke_measurements(input$plot_click$x, input$plot_click$y)
-        rv$add_status <- FALSE
+        target <- ifelse(rv$segments == 1, 18, 38)
+        if (nrow(rv$width_measurements) < target) {
+          handle_width_measurement(input$plot_click$x, input$plot_click$y)
+        } else {
+          handle_fluke_measurements(input$plot_click$x, input$plot_click$y)
+          rv$add_status <- FALSE
+        }
       }
     }
   })
@@ -613,23 +679,86 @@ server <- function(input, output, session) {
   # Save system ----
   shiny::observeEvent(input$saveBtn, {
     tryCatch({
-      req(rv$main_data, rv$new_fw)
+      req(rv$main_data)
 
-      # Criar nova entrada
-      new_entry <- create_new_entry(rv$segments)
+      if (input$app_mode == "free") {
+        req(rv$new_bl, rv$current_free_id)
 
-      save_data(new_entry = new_entry)
+        # Estrutura base para dados livres
+        new_entry <- data.frame(
+          Drone = as.character(input$drone), Resolution = as.character(input$ImageRES),
+          ID = as.character(rv$new_id), Obs = as.character(input$obs),
+          Species = as.character(input$Species), Date = as.character(rv$new_date),
+          Measured_Date = format(as.POSIXct(Sys.time()), "%Y-%m-%d %H:%M:%S"),
+          TO_Alt = as.numeric(rv$new_to_alt), F_Alt = as.numeric(rv$new_f_alt),
+          C_Alt = as.numeric(rv$new_calti), Frame_Score = as.character(rv$new_score),
+          sw = as.numeric(rv$new_sw), iw = as.numeric(rv$new_iw),
+          flen = as.numeric(rv$new_flen), imid = as.character(rv$new_imid),
+          Segments = as.character(rv$current_free_id), Pixel = as.numeric(rv$new_bl),
+          cGSD = NA_real_, EstLength = NA_real_, Comments = as.character(input$comments)
+        )
 
-      rv$click_save <- TRUE
+        # CORREÇÃO: Forçar tipagem das variáveis lidas da planilha vazia
+        rv$main_data <- readxl::read_xlsx(rv$main, col_names = TRUE) |>
+          dplyr::mutate(
+            dplyr::across(c(TO_Alt, F_Alt, C_Alt, sw, iw, flen, Pixel, cGSD, EstLength), as.numeric),
+            dplyr::across(c(Drone, Resolution, ID, Obs, Species, Date, Measured_Date,
+                            Frame_Score, imid, Segments, Comments), as.character)
+          )
 
-      output$mTable <- DT::renderDataTable({
-        MedidoR:::update_data_table(rv$secondary)
-      })
+        rv$current_data <- dplyr::bind_rows(rv$main_data, new_entry)
+        writexl::write_xlsx(rv$current_data, rv$main)
+        writexl::write_xlsx(rv$current_data, rv$secondary) # Estrutura plana
+
+        rv$main_data <- rv$current_data
+
+        # Modal para continuar ou finalizar medições livres
+        shiny::showModal(shiny::modalDialog(
+          title = "Measurement Saved",
+          "Would you like to continue collecting free measurements on this image or finish?",
+          footer = shiny::tagList(
+            shiny::actionButton("continue_free", "Continue"),
+            shiny::actionButton("finish_free", "Finish")
+          ),
+          easyClose = FALSE
+        ))
+
+      } else {
+        # Rotina nativa para Morphometrics
+        new_entry <- create_new_entry(rv$segments)
+        save_data(new_entry = new_entry)
+        rv$click_save <- TRUE
+      }
+
+      output$mTable <- DT::renderDataTable({ MedidoR:::update_data_table(rv$secondary) })
       return(TRUE)
     }, error = function(e) {
       showNotification(paste("Error when saving:", e$message), type = "error")
       return(FALSE)
     })
+  })
+
+  shiny::observeEvent(input$continue_free, {
+    rv$free_points <- data.frame(x = numeric(), y = numeric())
+    rv$add_status <- TRUE
+    shiny::removeModal()
+
+    # Aciona a janela de nova medida imediatamente
+    shiny::showModal(shiny::modalDialog(
+      title = "New Free Measurement",
+      shiny::textInput("free_measure_id", "Enter Measurement Name/ID:"),
+      footer = shiny::tagList(
+        shiny::actionButton("start_free_measure", "Confirm", class = "btn-primary"),
+        shiny::modalButton("Cancel")
+      )
+    ))
+  })
+
+  shiny::observeEvent(input$finish_free, {
+    rv$free_points <- data.frame(x = numeric(), y = numeric())
+    rv$current_free_id <- character()
+    rv$add_status <- TRUE
+    shiny::removeModal()
   })
 
   # UI feedback for add state
@@ -715,36 +844,63 @@ server <- function(input, output, session) {
       )
 
       rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
-                           data = rv$calib_data)
+                                  data = rv$calib_data)
 
       rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
       rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
 
-      # Atualizar medições
-      updated <- MedidoR:::update_measurements(
-        main_path = rv$main,
-        secondary_path = rv$secondary,
-        model = rv$calib_model,
-        calib_data = rv$calib_data,
-        current_data = NULL
-      )
+      # --- CONVERSÃO ISOLADA: MORPHOMETRICS VS FREE MEASUREMENTS ---
+      if (input$app_mode == "free") {
+
+        # 1. Lê a planilha do modo livre
+        df_free <- readxl::read_xlsx(rv$main)
+
+        # 2. Garante a coerção numérica para a predição
+        df_free$C_Alt <- as.numeric(df_free$C_Alt)
+        df_free$Pixel <- as.numeric(df_free$Pixel)
+
+        # 3. Prediz o cGSD (Ground Sample Distance) para cada medida com base na altitude
+        df_free$cGSD <- stats::predict(rv$calib_model, newdata = data.frame(C_Alt = df_free$C_Alt))
+
+        # 4. Multiplica o cGSD pelo comprimento em pixels para achar o tamanho real
+        df_free$EstLength <- df_free$cGSD * df_free$Pixel
+
+        # 5. Sobrescreve as planilhas
+        writexl::write_xlsx(df_free, rv$main)
+        writexl::write_xlsx(df_free, rv$secondary)
+
+        rv$main_data <- df_free
+        updated <- TRUE # Flag de controle manual
+
+      } else {
+        # Rotina nativa para Morphometrics
+        updated <- MedidoR:::update_measurements(
+          main_path = rv$main,
+          secondary_path = rv$secondary,
+          model = rv$calib_model,
+          calib_data = rv$calib_data,
+          current_data = NULL
+        )
+      }
+      # -------------------------------------------------------------
 
       if (!is.null(updated)) {
         output$mTable <- DT::renderDataTable({
           MedidoR:::update_data_table(rv$secondary)
         })
-        showNotification("Calibration applied successfully", type = "message")
+        shiny::showNotification("Calibration applied successfully", type = "message")
       }
-    }, error = function(e) {
-      showNotification(paste("Calibration failed:", e$message), type = "error")
 
-      calib_log(rbind(calib_log(),
-                      data.frame(Timestamp = Sys.time(),
-                                 Message = paste("Error:", e$message))))
+    }, error = function(e) {
+      shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
     })
 
     if (input$save_plot == "Y") {
-      dir.create(file.path(rv$user_dir, "Model-Plots"))
+      # Adicionado verificação de existência para evitar 'warnings' no console
+      plot_dir <- file.path(rv$user_dir, "Model-Plots")
+      if (!dir.exists(plot_dir)) {
+        dir.create(plot_dir)
+      }
     }
   })
 
