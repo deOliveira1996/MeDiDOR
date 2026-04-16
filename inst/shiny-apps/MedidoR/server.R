@@ -594,27 +594,30 @@ server <- function(input, output, session) {
   create_new_entry <- function(segments) {
     req(input$saveBtn)
 
+    safe_char <- function(x) { if (is.null(x) || length(x) == 0 || x == "") NA_character_ else as.character(x) }
+    safe_num <- function(x) { if (is.null(x) || length(x) == 0 || is.na(x) || x == "") NA_real_ else as.numeric(x) }
+
     base_df <- data.frame(
-      Drone = as.character(input$drone),
-      Resolution = as.character(input$ImageRES),
-      ID = as.character(rv$new_id),
-      Obs = as.character(input$obs),
-      Species = as.character(input$Species),
-      Date = as.character(rv$new_date),
-      Measured_Date = format(as.POSIXct(Sys.time()),
-                             "%Y-%m-%d %H:%M:%S"),
-      TO_Alt = as.numeric(rv$new_to_alt),
-      F_Alt = as.numeric(rv$new_f_alt),
-      C_Alt = as.numeric(rv$new_calti),
-      Frame_Score = as.character(rv$new_score),
-      sw = as.numeric(rv$new_sw),
-      iw = as.numeric(rv$new_iw),
-      flen = as.numeric(rv$new_flen),
-      imid = as.character(rv$new_imid),
+      Drone = safe_char(input$drone),
+      Resolution = safe_char(input$ImageRES),
+      ID = safe_char(rv$new_id),
+      Obs = safe_char(input$obs),
+      Species = safe_char(input$Species),
+      Date = safe_char(rv$new_date),
+      Measured_Date = format(as.POSIXct(Sys.time()), "%Y-%m-%d %H:%M:%S"),
+      TO_Alt = safe_num(rv$new_to_alt),
+      F_Alt = safe_num(rv$new_f_alt),
+      C_Alt = safe_num(rv$new_calti),
+      Frame_Score = safe_char(rv$new_score),
+      sw = safe_num(rv$new_sw),
+      iw = safe_num(rv$new_iw),
+      flen = safe_num(rv$new_flen),
+      imid = safe_char(rv$new_imid),
       cGSD = NA_real_,
       EstLength = NA_real_,
-      Comments = as.character(input$comments),
-      BL = as.numeric(rv$new_bl)
+      Comments = safe_char(input$comments),
+      BL = safe_num(rv$new_bl),
+      stringsAsFactors = FALSE
     )
 
     # Width columns
@@ -676,44 +679,39 @@ server <- function(input, output, session) {
     })
   }
 
+  # ==========================================
   # Save system ----
-  shiny::observeEvent(input$saveBtn, {
+  # ==========================================
+
+  # 1. Função auxiliar de validação (Super Robusta)
+  is_empty <- function(x) {
+    is.null(x) || length(x) == 0 || is.na(x) || trimws(as.character(x)) == ""
+  }
+
+  execute_save <- function() {
     tryCatch({
       req(rv$main_data)
 
       if (input$app_mode == "free") {
         req(rv$new_bl, rv$current_free_id)
 
-        # Funções de segurança para evitar vetores de tamanho 0
-        safe_char <- function(x) { if (is.null(x) || length(x) == 0) NA_character_ else as.character(x) }
-        safe_num <- function(x) { if (is.null(x) || length(x) == 0) NA_real_ else as.numeric(x) }
+        safe_char <- function(x) { if (is_empty(x)) NA_character_ else as.character(x) }
+        safe_num <- function(x) { if (is_empty(x)) NA_real_ else as.numeric(x) }
 
-        # Estrutura base para dados livres com preenchimento seguro
         new_entry <- data.frame(
-          Drone = safe_char(input$drone),
-          Resolution = safe_char(input$ImageRES),
-          ID = safe_char(rv$new_id),
-          Obs = safe_char(input$obs),
-          Species = safe_char(input$Species),
-          Date = safe_char(rv$new_date),
+          Drone = safe_char(input$drone), Resolution = safe_char(input$ImageRES),
+          ID = safe_char(rv$new_id), Obs = safe_char(input$obs),
+          Species = safe_char(input$Species), Date = safe_char(rv$new_date),
           Measured_Date = format(as.POSIXct(Sys.time()), "%Y-%m-%d %H:%M:%S"),
-          TO_Alt = safe_num(rv$new_to_alt),
-          F_Alt = safe_num(rv$new_f_alt),
-          C_Alt = safe_num(rv$new_calti),
-          Frame_Score = safe_char(rv$new_score),
-          sw = safe_num(rv$new_sw),
-          iw = safe_num(rv$new_iw),
-          flen = safe_num(rv$new_flen),
-          imid = safe_char(rv$new_imid),
-          Segments = safe_char(rv$current_free_id),
-          Pixel = safe_num(rv$new_bl),
-          cGSD = NA_real_,
-          EstLength = NA_real_,
-          Comments = safe_char(input$comments),
+          TO_Alt = safe_num(rv$new_to_alt), F_Alt = safe_num(rv$new_f_alt),
+          C_Alt = safe_num(rv$new_calti), Frame_Score = safe_char(rv$new_score),
+          sw = safe_num(rv$new_sw), iw = safe_num(rv$new_iw),
+          flen = safe_num(rv$new_flen), imid = safe_char(rv$new_imid),
+          Segments = safe_char(rv$current_free_id), Pixel = safe_num(rv$new_bl),
+          cGSD = NA_real_, EstLength = NA_real_, Comments = safe_char(input$comments),
           stringsAsFactors = FALSE
         )
 
-        # Forçar tipagem das variáveis lidas da planilha vazia
         rv$main_data <- readxl::read_xlsx(rv$main, col_names = TRUE) |>
           dplyr::mutate(
             dplyr::across(c(TO_Alt, F_Alt, C_Alt, sw, iw, flen, Pixel, cGSD, EstLength), as.numeric),
@@ -727,7 +725,6 @@ server <- function(input, output, session) {
 
         rv$main_data <- rv$current_data
 
-        # Modal para continuar ou finalizar medições livres
         shiny::showModal(shiny::modalDialog(
           title = "Measurement Saved",
           "Would you like to continue collecting free measurements on this image or finish?",
@@ -739,18 +736,58 @@ server <- function(input, output, session) {
         ))
 
       } else {
-        # Rotina nativa para Morphometrics
-        new_entry <- MedidoR:::create_new_entry(rv$segments)
-        MedidoR:::save_data(new_entry = new_entry)
+        # Rotina para Morphometrics
+        new_entry <- create_new_entry(rv$segments)
+        save_data(new_entry = new_entry)
         rv$click_save <- TRUE
       }
 
       output$mTable <- DT::renderDataTable({ MedidoR:::update_data_table(rv$secondary) })
       return(TRUE)
+
     }, error = function(e) {
       shiny::showNotification(paste("Error when saving:", e$message), type = "error")
       return(FALSE)
     })
+  }
+
+  shiny::observeEvent(input$saveBtn, {
+
+    missing_fields <- c()
+    if (is_empty(input$Species)) missing_fields <- c(missing_fields, "Species name")
+    if (is_empty(input$ImageID)) missing_fields <- c(missing_fields, "Image-ID")
+    if (is_empty(input$ImageRES)) missing_fields <- c(missing_fields, "Image Resolution")
+    if (is_empty(input$alt)) missing_fields <- c(missing_fields, "Flight Altitude")
+    if (is_empty(input$Date)) missing_fields <- c(missing_fields, "Date")
+    if (is_empty(input$obs)) missing_fields <- c(missing_fields, "Observer")
+    if (is_empty(input$sw)) missing_fields <- c(missing_fields, "Sensor width (sw)")
+    if (is_empty(input$flen)) missing_fields <- c(missing_fields, "Focal length (flen)")
+    if (is_empty(input$drone)) missing_fields <- c(missing_fields, "Drone model")
+
+    if (length(missing_fields) > 0) {
+      shiny::showModal(shiny::modalDialog(
+        title = "Missing Information",
+        shiny::HTML(
+          paste0(
+            "<p>The following fields are empty:</p><ul>",
+            paste0("<li><b>", missing_fields, "</b></li>", collapse = ""),
+            "</ul><p>Do you want to proceed and save anyway? Empty variables will be saved as NA.</p>"
+          )
+        ),
+        footer = shiny::tagList(
+          shiny::actionButton("force_save", "Proceed Anyway", class = "btn-warning"),
+          shiny::modalButton("Cancel")
+        ),
+        easyClose = TRUE
+      ))
+    } else {
+      execute_save()
+    }
+  })
+
+  shiny::observeEvent(input$force_save, {
+    shiny::removeModal()
+    execute_save()
   })
 
   shiny::observeEvent(input$continue_free, {
