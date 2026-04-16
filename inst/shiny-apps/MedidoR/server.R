@@ -1170,25 +1170,48 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$undo, {
     tryCatch({
 
-      if (nrow(rv$length_measurements) > 0 & nrow(rv$width_measurements) == 0) {
+      if (input$app_mode == "free") {
+        # Rotina de exclusão para Free Measurements
+        if (nrow(rv$free_points) > 0) {
+          # O argumento drop = FALSE previne a coerção silenciosa do data.frame para vetor numérico
+          rv$free_points <- rv$free_points[-nrow(rv$free_points), , drop = FALSE]
 
-        rv$length_measurements <- rv$length_measurements[-nrow(rv$length_measurements),]
+          # Recalcula a distância se houver segmentos válidos restantes
+          if (nrow(rv$free_points) > 1) {
+            distances <- sqrt(diff(rv$free_points$x)^2 + diff(rv$free_points$y)^2)
+            rv$new_bl <- sum(distances)
+            rv$add_status <- FALSE
+
+            shiny::showNotification(
+              sprintf("Point removed. Points: %d | Total Length: %.2f pixels", nrow(rv$free_points), rv$new_bl),
+              type = "message", duration = 2
+            )
+          } else {
+            # Reseta as condições de salvamento se o segmento foi desfeito
+            rv$new_bl <- numeric(0)
+            rv$add_status <- TRUE
+          }
+        }
+
+      } else {
+        # Rotina nativa de exclusão para Morphometrics
+        if (nrow(rv$length_measurements) > 0 & nrow(rv$width_measurements) == 0) {
+          rv$length_measurements <- rv$length_measurements[-nrow(rv$length_measurements), , drop = FALSE]
+        }
+
+        if (nrow(rv$width_measurements) > 0 & nrow(rv$fw_measurements) == 0) {
+          rv$width_measurements <- rv$width_measurements[-nrow(rv$width_measurements), , drop = FALSE]
+        }
+
+        if (nrow(rv$fw_measurements) > 0 & nrow(rv$fw_measurements) < 2) {
+          rv$fw_measurements <- rv$fw_measurements[-nrow(rv$fw_measurements), , drop = FALSE]
+        }
       }
 
-      if (nrow(rv$width_measurements) > 0 & nrow(rv$fw_measurements) == 0) {
-
-        rv$width_measurements <- rv$width_measurements[-nrow(rv$width_measurements),]
-      }
-
-      if (nrow(rv$fw_measurements) > 0 & nrow(rv$fw_measurements) < 2) {
-
-        rv$fw_measurements <- rv$fw_measurements[-nrow(rv$fw_measurements),]
-      }
       return(TRUE)
 
     }, error = function(e) {
-      showNotification(paste("Error:", e$message),
-                       type = "error")
+      shiny::showNotification(paste("Error:", e$message), type = "error")
       return(FALSE)
     })
   })
