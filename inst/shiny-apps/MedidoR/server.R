@@ -12,7 +12,6 @@ server <- function(input, output, session) {
     # Controle de segmentos
     segments = NULL,
 
-    # Medições
     length_measurements = data.frame(Length_X = numeric(),
                                      Length_Y = numeric()),
     width_measurements = data.frame(Width_X = numeric(),
@@ -20,18 +19,15 @@ server <- function(input, output, session) {
     fw_measurements = data.frame(Width_X = numeric(),
                                  Width_Y = numeric()),
 
-    # Dados principais
     main_data = NULL,
     current_data = NULL,
     main = NULL,
     secondary = NULL,
     dir_path = NULL,
 
-    # Diretórios
     user_dir = getwd(),
     current_dir = getwd(),
 
-    # Novos dados
     new_id = character(),
     new_score = character(),
     new_date = character(),
@@ -47,24 +43,22 @@ server <- function(input, output, session) {
     new_iw = numeric(),
     new_flen = numeric(),
 
-    # Imagem
     current_image = NULL,
     crop_status = FALSE,
     add_status = TRUE,
     click_save = FALSE,
 
-    # Dimensões e ranges
     img_width = 0,
     img_height = 0,
     plot_ranges_x = NULL,
     plot_ranges_y = NULL,
 
-    # Calibração
+
     calib_path = NULL,
     calib_data = NULL,
     calib_model = NULL,
     calib_train = NULL,
-    # Modo livre
+
     free_points = data.frame(x = numeric(), y = numeric()),
     current_free_id = character()
   )
@@ -120,7 +114,6 @@ server <- function(input, output, session) {
       if (!dir.exists(dir_path)) {
         dir.create(dir_path)
 
-        # --- LÓGICA CONDICIONAL DE CRIAÇÃO ---
         if (rv$segments == 3) {
           MedidoR:::create_data_free(path = rv$main, path2 = rv$secondary)
           modal_msg <- "Free measurements dataframe created"
@@ -281,13 +274,10 @@ server <- function(input, output, session) {
       return()
     }
 
-    # Criar pares consecutivos (1-2, 3-4, etc.)
     pairs <- data.frame(
       x1 = coords$Width_X[seq(1, nrow(coords) - 1, 2)],
-      # Índices ímpares (1,3,5...)
       y1 = coords$Width_Y[seq(1, nrow(coords) - 1, 2)],
       x2 = coords$Width_X[seq(2, nrow(coords), 2)],
-      # Índices pares (2,4,6...)
       y2 = coords$Width_Y[seq(2, nrow(coords), 2)]
     )
 
@@ -488,7 +478,6 @@ server <- function(input, output, session) {
       plot(rv$current_image, main = "Select area of interest", axes = T)
     }
 
-    # Lógica visual para Free Measurements
     if (input$app_mode == "free" && nrow(rv$free_points) > 0) {
       graphics::points(rv$free_points$x, rv$free_points$y, col = "cyan", pch = 16, cex = 1.5)
       if (nrow(rv$free_points) > 1) {
@@ -504,10 +493,8 @@ server <- function(input, output, session) {
 
     if (input$app_mode == "free") {
       if (length(rv$current_free_id) > 0 && rv$current_free_id != "") {
-        # Adiciona o novo ponto ao dataframe reativo
         rv$free_points <- rbind(rv$free_points, data.frame(x = input$plot_click$x, y = input$plot_click$y))
 
-        # Se houver mais de um ponto, calcula a distância cumulativa de todos os segmentos
         if (nrow(rv$free_points) > 1) {
           distances <- sqrt(diff(rv$free_points$x)^2 + diff(rv$free_points$y)^2)
           rv$new_bl <- sum(distances) # Armazena o somatório dos pixels
@@ -687,7 +674,6 @@ server <- function(input, output, session) {
   # Save system ----
   # ==========================================
 
-  # 1. Função auxiliar de validação (Super Robusta)
   is_empty <- function(x) {
     is.null(x) || length(x) == 0 || is.na(x) || trimws(as.character(x)) == ""
   }
@@ -1026,7 +1012,6 @@ server <- function(input, output, session) {
 
 
     if (input$save_plot == "Y") {
-      # Adicionado verificação de existência para evitar 'warnings' no console
       plot_dir <- file.path(rv$user_dir, "Model-Plots")
       if (!dir.exists(plot_dir)) {
         dir.create(plot_dir)
@@ -1040,15 +1025,12 @@ server <- function(input, output, session) {
     req(input$calib, rv$calib_model)
 
     tryCatch({
-      # Configurar área de plotagem
       old_par <- par(no.readonly = TRUE)
       on.exit(par(old_par))
       par(mfrow = c(2, 2))
 
-      # Plotar diagnósticos
       plot(rv$calib_model)
 
-      # Salvar se necessário
       if (input$save_plot == "Y") {
         png(file.path(rv$user_dir,"Model-Plots", "Diagnostic_plot.png"),
             width = 10, height = 6, units = "in", res = 300)
@@ -1249,12 +1231,10 @@ server <- function(input, output, session) {
     tryCatch({
 
       if (input$app_mode == "free") {
-        # Rotina de exclusão para Free Measurements
+
         if (nrow(rv$free_points) > 0) {
-          # O argumento drop = FALSE previne a coerção silenciosa do data.frame para vetor numérico
           rv$free_points <- rv$free_points[-nrow(rv$free_points), , drop = FALSE]
 
-          # Recalcula a distância se houver segmentos válidos restantes
           if (nrow(rv$free_points) > 1) {
             distances <- sqrt(diff(rv$free_points$x)^2 + diff(rv$free_points$y)^2)
             rv$new_bl <- sum(distances)
@@ -1265,14 +1245,13 @@ server <- function(input, output, session) {
               type = "message", duration = 2
             )
           } else {
-            # Reseta as condições de salvamento se o segmento foi desfeito
             rv$new_bl <- numeric(0)
             rv$add_status <- TRUE
           }
         }
 
       } else {
-        # Rotina nativa de exclusão para Morphometrics
+
         if (nrow(rv$length_measurements) > 0 & nrow(rv$width_measurements) == 0) {
           rv$length_measurements <- rv$length_measurements[-nrow(rv$length_measurements), , drop = FALSE]
         }
