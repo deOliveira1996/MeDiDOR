@@ -71,6 +71,14 @@ ui <- shiny::fluidPage(
               max = 150,
               step = 5
             ),
+            shiny::numericInput(
+              "laser_alt",
+              "Laser Altitude (m)",
+              0,
+              min = 0,
+              max = 150,
+              step = 5
+            ),
             shiny::br(),
             shiny::numericInput("takeof",
                                 "Take-off Altitude (m)",
@@ -231,7 +239,8 @@ ui <- shiny::fluidPage(
               shiny::tags$ul(
                 shiny::tags$li("Reference object measurements (pixels)"),
                 shiny::tags$li("Actual lengths (meters)"),
-                shiny::tags$li("Flight altitude data")
+                shiny::tags$li("Flight altitude data"),
+                shiny::tags$li("Laser altitude data")
               ),
               shiny::tags$li("Upload in", shiny::strong("Calibration"), "tab"),
               shiny::tags$li("Review diagnostic plots for model validation")
@@ -347,6 +356,13 @@ ui <- shiny::fluidPage(
                                      "No" = "N"),
                               selected = "Y"
                               ),
+          shiny::radioButtons("alt_data",
+                              "Laser or Barometer ?",
+                              choices =
+                                list("Laser" = "0",
+                                     "Barometer" = "1"),
+                              selected = "1"
+          ),
           shiny::p(),
           shiny::wellPanel(
             shiny::fluidRow(shiny::strong("Diagnostic plot")),

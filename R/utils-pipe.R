@@ -15,6 +15,7 @@ dtfilter <- function(x) {
         F_Alt,
         TO_Alt,
         C_Alt,
+        Laser_Alt,
         Measured_Date,
         Species,
         cGSD,
@@ -106,7 +107,7 @@ create_data_free <- function(path, path2) {
     Drone = character(0), Resolution = character(0), ID = character(0),
     Obs = character(0), Species = character(0), Date = character(0),
     Measured_Date = character(0), TO_Alt = numeric(0), F_Alt = numeric(0),
-    C_Alt = numeric(0), Frame_Score = character(0),
+    C_Alt = numeric(0), Laser_Alt = numeric(0), Frame_Score = character(0),
     sw = numeric(0), iw = numeric(0), flen = numeric(0), imid = character(0),
     Segments = character(0), Pixel = numeric(0),
     cGSD = numeric(0), EstLength = numeric(0), Comments = character(0)
@@ -123,12 +124,12 @@ create_data_free <- function(path, path2) {
 
 # Update measurements with model predictions
 update_measurements <- function(main_path, secondary_path,
-                                model, calib_data,
-                                current_data = NULL) {
+         model, calib_data,
+         current_data = NULL) {
   if (file.exists(main_path)) {
     if (is.null(current_data)) {
       current_data <- readxl::read_xlsx(main_path)
-      current_data_1 <- dtfilter(current_data)
+      current_data_1 <- MedidoR:::dtfilter(current_data)
     }
 
     current_data_1$cGSD <- stats::predict(model, current_data_1)
@@ -144,10 +145,14 @@ update_measurements <- function(main_path, secondary_path,
       dplyr::select(-cGSD, -EstLength) |>
       dplyr::left_join(fill_data, by = "imid")
 
-    # Filtrar e arredondar
+    # CORREÇÃO: ObjLength removido da seleção
     measurements_1 <- current_data_1 |>
       dplyr::mutate(
-        dplyr::across(where(is.numeric), ~ round(., 2))
+        dplyr::across(
+          c(Pixel, C_Alt, TO_Alt, F_Alt, Laser_Alt,
+            sw, iw, flen, EstLength, cGSD),
+          \(x) round(as.numeric(x), digits = 2)
+        )
       )
 
     writexl::write_xlsx(x = current_data, path = main_path,
@@ -169,11 +174,11 @@ update_measurements <- function(main_path, secondary_path,
 calib <- function(file = "") {
   readxl::read_excel(file) |>
     dplyr::select(Date, Pixel, ObjLength,
-                  GPSAlt, TO_Alt) |>
+                  GPSAlt, TO_Alt, Laser_Alt) |>
     dplyr::mutate(
       Date = as.factor(Date),
       dplyr::across(c(Pixel, ObjLength,
-                      GPSAlt, TO_Alt), as.numeric),
+                      GPSAlt, TO_Alt, Laser_Alt), as.numeric),
       C_Alt = GPSAlt + TO_Alt,
       eGSD = round((ObjLength/100)/Pixel, 4)
     )
@@ -190,7 +195,7 @@ create_data <- function(segments, path, path2) {
       Drone = character(0), Resolution = character(0), ID = character(0),
       Obs = character(0), Species = character(0), Date = character(0),
       Measured_Date = character(0), TO_Alt = numeric(0), F_Alt = numeric(0),
-      C_Alt = numeric(0),Frame_Score = character(0),
+      C_Alt = numeric(0), Laser_Alt = numeric(0), Frame_Score = character(0),
       sw = numeric(0), iw = numeric(0), flen = numeric(0), imid = character(0),
       BL = numeric(0),
       WD_10 = numeric(0), WD_20 = numeric(0), WD_30 = numeric(0),
@@ -207,7 +212,7 @@ create_data <- function(segments, path, path2) {
       Drone = character(0), Resolution = character(0), ID = character(0),
       Obs = character(0), Species = character(0), Date = character(0),
       Measured_Date = character(0), TO_Alt = numeric(0), F_Alt = numeric(0),
-      C_Alt = numeric(0),Frame_Score = character(0),
+      C_Alt = numeric(0), Laser_Alt = numeric(0),Frame_Score = character(0),
       sw = numeric(0), iw = numeric(0), flen = numeric(0), imid = character(0),
       BL = numeric(0),
       WD_05 = numeric(0), WD_10 = numeric(0), WD_15 = numeric(0),
@@ -233,7 +238,7 @@ create_data2 <- function(path) {
   dt <- data.frame(
     Drone = character(0), Resolution = character(0), ID = character(0),
     Obs = character(0), Date = character(0), Measured_Date = character(0),
-    TO_Alt = numeric(0), F_Alt = numeric(0), C_Alt = numeric(0),
+    TO_Alt = numeric(0), F_Alt = numeric(0), C_Alt = numeric(0), Laser_Alt = numeric(0),
     OBJ_L = numeric(0), OBJ_P = numeric(0), sw = numeric(0), iw = numeric(0),
     flen = numeric(0), imid = character(0), Comments = character(0)
   )

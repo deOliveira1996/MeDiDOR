@@ -74,6 +74,14 @@ ui <- shiny::fluidPage(
             max = 150,
             step = 5
           ),
+          shiny::numericInput(
+            "laser_alt",
+            "Laser Altitude (m)",
+            0,
+            min = 0,
+            max = 150,
+            step = 5
+          ),
           shiny::br(),
           shiny::numericInput("takeof",
                               "Take-off Altitude (m)",

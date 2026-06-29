@@ -38,6 +38,7 @@ server <- function(input, output, session) {
     new_f_alt = numeric(),
     new_to_alt = numeric(),
     new_calti = numeric(),
+    new_laser_alt = numeric(),
     new_bl = numeric(),
     new_widths = numeric(),
     new_fw = numeric(),
@@ -298,6 +299,7 @@ server <- function(input, output, session) {
     rv$new_f_alt = input$alt
     rv$new_to_alt = input$takeof
     rv$new_calti = input$alt + input$takeof
+    rv$new_laser_alt = input$laser_alt
     rv$new_bl = sum(sqrt(
       diff(rv$length_measurements$Length_X)^2 +
         diff(rv$length_measurements$Length_Y)^2
@@ -582,6 +584,7 @@ server <- function(input, output, session) {
     rv$new_f_alt = as.numeric(input$alt)
     rv$new_to_alt = as.numeric(input$takeof)
     rv$new_calti = as.numeric(input$alt) + as.numeric(input$takeof)
+    rv$new_laser_alt = as.numeric(input$laser_alt)
     rv$new_id = as.character(input$ImageID)
     rv$new_drone = as.character(input$drone)
     rv$new_objL = as.numeric(input$objL)
@@ -608,6 +611,7 @@ server <- function(input, output, session) {
       TO_Alt = safe_num(rv$new_to_alt),
       F_Alt = safe_num(rv$new_f_alt),
       C_Alt = safe_num(rv$new_calti),
+      Laser_Alt = safe_num(rv$new_laser_alt),
       Frame_Score = safe_char(rv$new_score),
       sw = safe_num(rv$new_sw),
       iw = safe_num(rv$new_iw),
@@ -648,7 +652,7 @@ server <- function(input, output, session) {
 
       rv$main_data <- readxl::read_xlsx(rv$main, col_names = T) |>
         dplyr::mutate(
-          dplyr::across(c(F_Alt, TO_Alt, C_Alt, sw, iw, flen,
+          dplyr::across(c(F_Alt, TO_Alt, C_Alt, Laser_Alt, sw, iw, flen,
                           BL, starts_with("WD_"),
                           cGSD, EstLength), as.numeric),
           dplyr::across(c(Drone, Obs, Species, Date, Measured_Date, ID,
@@ -659,7 +663,7 @@ server <- function(input, output, session) {
 
       writexl::write_xlsx(rv$current_data, rv$main)
 
-      filtered_data <- dtfilter(rv$current_data)
+      filtered_data <- MedidoR::dtfilter(rv$current_data)
 
       writexl::write_xlsx(x = filtered_data, path = rv$secondary)
 
@@ -704,7 +708,8 @@ server <- function(input, output, session) {
           Species = safe_char(input$Species), Date = safe_char(rv$new_date),
           Measured_Date = format(as.POSIXct(Sys.time()), "%Y-%m-%d %H:%M:%S"),
           TO_Alt = safe_num(rv$new_to_alt), F_Alt = safe_num(rv$new_f_alt),
-          C_Alt = safe_num(rv$new_calti), Frame_Score = safe_char(rv$new_score),
+          C_Alt = safe_num(rv$new_calti), Laser_Alt = safe_num(rv$new_laser_alt),
+          Frame_Score = safe_char(rv$new_score),
           sw = safe_num(rv$new_sw), iw = safe_num(rv$new_iw),
           flen = safe_num(rv$new_flen), imid = safe_char(rv$new_imid),
           Segments = safe_char(rv$current_free_id), Pixel = safe_num(rv$new_bl),
@@ -714,7 +719,8 @@ server <- function(input, output, session) {
 
         rv$main_data <- readxl::read_xlsx(rv$main, col_names = TRUE) |>
           dplyr::mutate(
-            dplyr::across(c(TO_Alt, F_Alt, C_Alt, sw, iw, flen, Pixel, cGSD, EstLength), as.numeric),
+            dplyr::across(c(TO_Alt, F_Alt, C_Alt, Laser_Alt, sw, iw, flen, Pixel,
+                            cGSD, EstLength), as.numeric),
             dplyr::across(c(Drone, Resolution, ID, Obs, Species, Date, Measured_Date,
                             Frame_Score, imid, Segments, Comments), as.character)
           )
@@ -758,6 +764,7 @@ server <- function(input, output, session) {
     if (is_empty(input$ImageID)) missing_fields <- c(missing_fields, "Image-ID")
     if (is_empty(input$ImageRES)) missing_fields <- c(missing_fields, "Image Resolution")
     if (is_empty(input$alt)) missing_fields <- c(missing_fields, "Flight Altitude")
+    if (is_empty(input$laser_alt)) missing_fields <- c(missing_fields, "Laser Altitude")
     if (is_empty(input$Date)) missing_fields <- c(missing_fields, "Date")
     if (is_empty(input$obs)) missing_fields <- c(missing_fields, "Observer")
     if (is_empty(input$sw)) missing_fields <- c(missing_fields, "Sensor width (sw)")
@@ -854,6 +861,7 @@ server <- function(input, output, session) {
     rv$new_date = character()
     rv$new_f_alt = numeric()
     rv$new_calti = numeric()
+    rv$new_laser_alt = numeric()
     rv$new_bl = numeric()
     rv$new_widths = numeric()
     rv$new_fw = numeric()
@@ -866,6 +874,7 @@ server <- function(input, output, session) {
     shiny::updateTextInput(inputId = "ImageId", value = "")
     shiny::updateRadioButtons(inputId = "score", selected = 4)
     shiny::updateNumericInput(inputId = "alt", value = 20)
+    shiny::updateNumericInput(inputId = "laser_alt", value = 0)
     rv$plot_ranges_x = NULL
     rv$plot_ranges_y = NULL
 
@@ -878,74 +887,143 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$calib, {
     req(input$calib_path, rv$main, rv$secondary)
 
-    tryCatch({
-      rv$calib_path <- input$calib_path
+    if (input$alt_data == 1) {
+      tryCatch({
+        rv$calib_path <- input$calib_path
 
-      # Carregar e processar dados de calibração
-      rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
-        stats::na.omit()
+        rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
+          stats::na.omit()
 
-      # Treinar modelo
-      rv$calib_train <- caret::train(
-        as.numeric(eGSD) ~ as.numeric(C_Alt),
-        data = rv$calib_data,
-        method = "lm",
-        trControl = caret::trainControl(method = "repeatedcv",
-                                        number = 10,
-                                        repeats = 5)
-      )
-
-      rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
-                                  data = rv$calib_data)
-
-      rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
-      rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
-
-      # --- CONVERSÃO ISOLADA: MORPHOMETRICS VS FREE MEASUREMENTS ---
-      if (input$app_mode == "free") {
-
-        # 1. Lê a planilha do modo livre
-        df_free <- readxl::read_xlsx(rv$main)
-
-        # 2. Garante a coerção numérica para a predição
-        df_free$C_Alt <- as.numeric(df_free$C_Alt)
-        df_free$Pixel <- as.numeric(df_free$Pixel)
-
-        # 3. Prediz o cGSD (Ground Sample Distance) para cada medida com base na altitude
-        df_free$cGSD <- stats::predict(rv$calib_model, newdata = data.frame(C_Alt = df_free$C_Alt))
-
-        # 4. Multiplica o cGSD pelo comprimento em pixels para achar o tamanho real
-        df_free$EstLength <- df_free$cGSD * df_free$Pixel
-
-        # 5. Sobrescreve as planilhas
-        writexl::write_xlsx(df_free, rv$main)
-        writexl::write_xlsx(df_free, rv$secondary)
-
-        rv$main_data <- df_free
-        updated <- TRUE # Flag de controle manual
-
-      } else {
-        # Rotina nativa para Morphometrics
-        updated <- MedidoR:::update_measurements(
-          main_path = rv$main,
-          secondary_path = rv$secondary,
-          model = rv$calib_model,
-          calib_data = rv$calib_data,
-          current_data = NULL
+        rv$calib_train <- caret::train(
+          as.numeric(eGSD) ~ as.numeric(C_Alt),
+          data = rv$calib_data,
+          method = "lm",
+          trControl = caret::trainControl(method = "repeatedcv",
+                                          number = 10,
+                                          repeats = 5)
         )
-      }
-      # -------------------------------------------------------------
 
-      if (!is.null(updated)) {
-        output$mTable <- DT::renderDataTable({
-          MedidoR:::update_data_table(rv$secondary)
-        })
-        shiny::showNotification("Calibration applied successfully", type = "message")
-      }
+        rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
+                                    data = rv$calib_data)
 
-    }, error = function(e) {
-      shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
-    })
+        rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
+        rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
+
+        if (input$app_mode == "free") {
+
+          df_free <- readxl::read_xlsx(rv$main)
+
+          df_free$C_Alt <- as.numeric(df_free$C_Alt)
+          df_free$Pixel <- as.numeric(df_free$Pixel)
+
+          df_free$cGSD <- stats::predict(rv$calib_model,
+                                         newdata = data.frame(C_Alt = df_free$C_Alt))
+
+          df_free$EstLength <- df_free$cGSD * df_free$Pixel
+
+          writexl::write_xlsx(df_free, rv$main)
+          writexl::write_xlsx(df_free, rv$secondary)
+
+          rv$main_data <- df_free
+          updated <- TRUE
+
+        }
+
+        else {
+          updated <- MedidoR:::update_measurements(
+            main_path = rv$main,
+            secondary_path = rv$secondary,
+            model = rv$calib_model,
+            calib_data = rv$calib_data,
+            current_data = NULL
+          )
+        }
+
+        # -------------------------------------------------------------
+
+        if (!is.null(updated)) {
+          output$mTable <- DT::renderDataTable({
+            MedidoR:::update_data_table(rv$secondary)
+          })
+          shiny::showNotification("Calibration applied successfully", type = "message")
+        }
+
+      }, error = function(e) {
+        shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
+      })
+    }
+
+    if (input$alt_data == 0) {
+      tryCatch({
+        rv$calib_path <- input$calib_path
+
+        rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
+          stats::na.omit()
+
+        rv$calib_train <- caret::train(
+          as.numeric(eGSD) ~ as.numeric(Laser_Alt),
+          data = rv$calib_data,
+          method = "lm",
+          trControl = caret::trainControl(method = "repeatedcv",
+                                          number = 10,
+                                          repeats = 5)
+        )
+
+        rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(Laser_Alt),
+                                    data = rv$calib_data)
+
+        rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
+        rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
+
+        if (input$app_mode == "free") {
+
+          df_free <- readxl::read_xlsx(rv$main)
+
+          df_free$C_Alt <- as.numeric(df_free$C_Alt)
+          df_free$Laser_Alt <- as.numeric(df_free$Laser_Alt)
+          df_free$Pixel <- as.numeric(df_free$Pixel)
+
+          df_free$cGSD <- stats::predict(rv$calib_model, newdata = data.frame(Laser_Alt = df_free$Laser_Alt))
+
+          df_free$EstLength <- df_free$cGSD * df_free$Pixel
+
+          df_free <- df_free |>
+            dplyr::mutate(
+              dplyr::across(
+                c(Pixel, C_Alt, TO_Alt, F_Alt, Laser_Alt, sw, iw, flen, EstLength),
+                \(x) round(as.numeric(x), digits = 2)
+              )
+            )
+
+          writexl::write_xlsx(df_free, rv$main)
+          writexl::write_xlsx(df_free, rv$secondary)
+
+          rv$main_data <- df_free
+          updated <- TRUE
+
+        } else {
+          updated <- MedidoR:::update_measurements(
+            main_path = rv$main,
+            secondary_path = rv$secondary,
+            model = rv$calib_model,
+            calib_data = rv$calib_data,
+            current_data = NULL
+          )
+        }
+        # -------------------------------------------------------------
+
+        if (!is.null(updated)) {
+          output$mTable <- DT::renderDataTable({
+            MedidoR:::update_data_table(rv$secondary)
+          })
+          shiny::showNotification("Calibration applied successfully", type = "message")
+        }
+
+      }, error = function(e) {
+        shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
+      })
+    }
+
 
     if (input$save_plot == "Y") {
       # Adicionado verificação de existência para evitar 'warnings' no console
