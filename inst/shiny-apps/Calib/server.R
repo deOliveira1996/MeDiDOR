@@ -1,4 +1,3 @@
-
 options(shiny.maxRequestSize = 50 * 1024^2)
 
 # Define server
@@ -26,6 +25,7 @@ server <- function(input, output, session) {
     new_f_alt = numeric(),
     new_to_alt = numeric(),
     new_calti = numeric(),
+    new_laser_alt = numeric(),
     new_objL = numeric(),
     new_objP = numeric(),
     new_iw = numeric(),
@@ -332,6 +332,7 @@ server <- function(input, output, session) {
     rv$new_f_alt = as.numeric(input$alt)
     rv$new_to_alt = as.numeric(input$takeof)
     rv$new_calti = as.numeric(input$alt) + as.numeric(input$takeof)
+    rv$new_laser_alt = as.numeric(input$laser_alt)
     rv$new_drone = as.character(input$drone)
     rv$new_objL = as.numeric(input$objL)
     rv$new_imid = as.character(input$file$name)
@@ -353,6 +354,7 @@ server <- function(input, output, session) {
       TO_Alt = as.numeric(rv$new_to_alt),
       F_Alt = as.numeric(rv$new_f_alt),
       C_Alt = as.numeric(rv$new_calti),
+      Laser_Alt = as.numeric(rv$new_laser_alt),
       OBJ_L = as.numeric(rv$new_objL),
       OBJ_P = round(as.numeric(rv$new_objP), 2),
       sw = as.numeric(rv$new_sw),
@@ -371,7 +373,7 @@ server <- function(input, output, session) {
 
       rv$main_data <- readxl::read_xlsx(rv$main, col_names = T) |>
         dplyr::mutate(
-          dplyr::across(c(F_Alt, TO_Alt, C_Alt, OBJ_L,
+          dplyr::across(c(F_Alt, TO_Alt, C_Alt, Laser_Alt, OBJ_L,
                           OBJ_P, sw, iw, flen), as.numeric),
           dplyr::across(c(Drone, Obs, Resolution, Date,
                           Measured_Date, ID, Comments, imid), as.character)
@@ -459,6 +461,7 @@ server <- function(input, output, session) {
     rv$new_date = character()
     rv$new_f_alt = numeric()
     rv$new_calti = numeric()
+    rv$new_laser_alt = numeric()
     rv$new_sw = numeric()
     rv$new_iw = numeric()
     rv$new_flen = numeric()

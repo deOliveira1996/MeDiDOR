@@ -1,7 +1,7 @@
 Package: MedidoR
 Type: Package
 Title: Aerial Photogrammetry Analyses
-Version: 1.1.1
+Version: 1.2.1
 Authors@R: c(person(given = "Lucas",
            family = "de Oliveira",
            role = "cre",
@@ -35,3 +35,7 @@ Imports:
     lattice,
     Hmisc
 RoxygenNote: 7.3.3
+Suggests: 
+    shinytest2,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

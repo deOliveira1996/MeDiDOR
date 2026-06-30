@@ -12,7 +12,6 @@ server <- function(input, output, session) {
     # Controle de segmentos
     segments = NULL,
 
-    # Medições
     length_measurements = data.frame(Length_X = numeric(),
                                      Length_Y = numeric()),
     width_measurements = data.frame(Width_X = numeric(),
@@ -20,24 +19,22 @@ server <- function(input, output, session) {
     fw_measurements = data.frame(Width_X = numeric(),
                                  Width_Y = numeric()),
 
-    # Dados principais
     main_data = NULL,
     current_data = NULL,
     main = NULL,
     secondary = NULL,
     dir_path = NULL,
 
-    # Diretórios
     user_dir = getwd(),
     current_dir = getwd(),
 
-    # Novos dados
     new_id = character(),
     new_score = character(),
     new_date = character(),
     new_f_alt = numeric(),
     new_to_alt = numeric(),
     new_calti = numeric(),
+    new_laser_alt = numeric(),
     new_bl = numeric(),
     new_widths = numeric(),
     new_fw = numeric(),
@@ -46,24 +43,22 @@ server <- function(input, output, session) {
     new_iw = numeric(),
     new_flen = numeric(),
 
-    # Imagem
     current_image = NULL,
     crop_status = FALSE,
     add_status = TRUE,
     click_save = FALSE,
 
-    # Dimensões e ranges
     img_width = 0,
     img_height = 0,
     plot_ranges_x = NULL,
     plot_ranges_y = NULL,
 
-    # Calibração
+
     calib_path = NULL,
     calib_data = NULL,
     calib_model = NULL,
     calib_train = NULL,
-    # Modo livre
+
     free_points = data.frame(x = numeric(), y = numeric()),
     current_free_id = character()
   )
@@ -119,7 +114,6 @@ server <- function(input, output, session) {
       if (!dir.exists(dir_path)) {
         dir.create(dir_path)
 
-        # --- LÓGICA CONDICIONAL DE CRIAÇÃO ---
         if (rv$segments == 3) {
           MedidoR:::create_data_free(path = rv$main, path2 = rv$secondary)
           modal_msg <- "Free measurements dataframe created"
@@ -280,13 +274,10 @@ server <- function(input, output, session) {
       return()
     }
 
-    # Criar pares consecutivos (1-2, 3-4, etc.)
     pairs <- data.frame(
       x1 = coords$Width_X[seq(1, nrow(coords) - 1, 2)],
-      # Índices ímpares (1,3,5...)
       y1 = coords$Width_Y[seq(1, nrow(coords) - 1, 2)],
       x2 = coords$Width_X[seq(2, nrow(coords), 2)],
-      # Índices pares (2,4,6...)
       y2 = coords$Width_Y[seq(2, nrow(coords), 2)]
     )
 
@@ -298,6 +289,7 @@ server <- function(input, output, session) {
     rv$new_f_alt = input$alt
     rv$new_to_alt = input$takeof
     rv$new_calti = input$alt + input$takeof
+    rv$new_laser_alt = input$laser_alt
     rv$new_bl = sum(sqrt(
       diff(rv$length_measurements$Length_X)^2 +
         diff(rv$length_measurements$Length_Y)^2
@@ -486,7 +478,6 @@ server <- function(input, output, session) {
       plot(rv$current_image, main = "Select area of interest", axes = T)
     }
 
-    # Lógica visual para Free Measurements
     if (input$app_mode == "free" && nrow(rv$free_points) > 0) {
       graphics::points(rv$free_points$x, rv$free_points$y, col = "cyan", pch = 16, cex = 1.5)
       if (nrow(rv$free_points) > 1) {
@@ -502,10 +493,8 @@ server <- function(input, output, session) {
 
     if (input$app_mode == "free") {
       if (length(rv$current_free_id) > 0 && rv$current_free_id != "") {
-        # Adiciona o novo ponto ao dataframe reativo
         rv$free_points <- rbind(rv$free_points, data.frame(x = input$plot_click$x, y = input$plot_click$y))
 
-        # Se houver mais de um ponto, calcula a distância cumulativa de todos os segmentos
         if (nrow(rv$free_points) > 1) {
           distances <- sqrt(diff(rv$free_points$x)^2 + diff(rv$free_points$y)^2)
           rv$new_bl <- sum(distances) # Armazena o somatório dos pixels
@@ -582,6 +571,7 @@ server <- function(input, output, session) {
     rv$new_f_alt = as.numeric(input$alt)
     rv$new_to_alt = as.numeric(input$takeof)
     rv$new_calti = as.numeric(input$alt) + as.numeric(input$takeof)
+    rv$new_laser_alt = as.numeric(input$laser_alt)
     rv$new_id = as.character(input$ImageID)
     rv$new_drone = as.character(input$drone)
     rv$new_objL = as.numeric(input$objL)
@@ -608,6 +598,7 @@ server <- function(input, output, session) {
       TO_Alt = safe_num(rv$new_to_alt),
       F_Alt = safe_num(rv$new_f_alt),
       C_Alt = safe_num(rv$new_calti),
+      Laser_Alt = safe_num(rv$new_laser_alt),
       Frame_Score = safe_char(rv$new_score),
       sw = safe_num(rv$new_sw),
       iw = safe_num(rv$new_iw),
@@ -648,7 +639,7 @@ server <- function(input, output, session) {
 
       rv$main_data <- readxl::read_xlsx(rv$main, col_names = T) |>
         dplyr::mutate(
-          dplyr::across(c(F_Alt, TO_Alt, C_Alt, sw, iw, flen,
+          dplyr::across(c(F_Alt, TO_Alt, C_Alt, Laser_Alt, sw, iw, flen,
                           BL, starts_with("WD_"),
                           cGSD, EstLength), as.numeric),
           dplyr::across(c(Drone, Obs, Species, Date, Measured_Date, ID,
@@ -659,7 +650,7 @@ server <- function(input, output, session) {
 
       writexl::write_xlsx(rv$current_data, rv$main)
 
-      filtered_data <- dtfilter(rv$current_data)
+      filtered_data <- MedidoR::dtfilter(rv$current_data)
 
       writexl::write_xlsx(x = filtered_data, path = rv$secondary)
 
@@ -683,7 +674,6 @@ server <- function(input, output, session) {
   # Save system ----
   # ==========================================
 
-  # 1. Função auxiliar de validação (Super Robusta)
   is_empty <- function(x) {
     is.null(x) || length(x) == 0 || is.na(x) || trimws(as.character(x)) == ""
   }
@@ -704,7 +694,8 @@ server <- function(input, output, session) {
           Species = safe_char(input$Species), Date = safe_char(rv$new_date),
           Measured_Date = format(as.POSIXct(Sys.time()), "%Y-%m-%d %H:%M:%S"),
           TO_Alt = safe_num(rv$new_to_alt), F_Alt = safe_num(rv$new_f_alt),
-          C_Alt = safe_num(rv$new_calti), Frame_Score = safe_char(rv$new_score),
+          C_Alt = safe_num(rv$new_calti), Laser_Alt = safe_num(rv$new_laser_alt),
+          Frame_Score = safe_char(rv$new_score),
           sw = safe_num(rv$new_sw), iw = safe_num(rv$new_iw),
           flen = safe_num(rv$new_flen), imid = safe_char(rv$new_imid),
           Segments = safe_char(rv$current_free_id), Pixel = safe_num(rv$new_bl),
@@ -714,7 +705,8 @@ server <- function(input, output, session) {
 
         rv$main_data <- readxl::read_xlsx(rv$main, col_names = TRUE) |>
           dplyr::mutate(
-            dplyr::across(c(TO_Alt, F_Alt, C_Alt, sw, iw, flen, Pixel, cGSD, EstLength), as.numeric),
+            dplyr::across(c(TO_Alt, F_Alt, C_Alt, Laser_Alt, sw, iw, flen, Pixel,
+                            cGSD, EstLength), as.numeric),
             dplyr::across(c(Drone, Resolution, ID, Obs, Species, Date, Measured_Date,
                             Frame_Score, imid, Segments, Comments), as.character)
           )
@@ -758,6 +750,7 @@ server <- function(input, output, session) {
     if (is_empty(input$ImageID)) missing_fields <- c(missing_fields, "Image-ID")
     if (is_empty(input$ImageRES)) missing_fields <- c(missing_fields, "Image Resolution")
     if (is_empty(input$alt)) missing_fields <- c(missing_fields, "Flight Altitude")
+    if (is_empty(input$laser_alt)) missing_fields <- c(missing_fields, "Laser Altitude")
     if (is_empty(input$Date)) missing_fields <- c(missing_fields, "Date")
     if (is_empty(input$obs)) missing_fields <- c(missing_fields, "Observer")
     if (is_empty(input$sw)) missing_fields <- c(missing_fields, "Sensor width (sw)")
@@ -854,6 +847,7 @@ server <- function(input, output, session) {
     rv$new_date = character()
     rv$new_f_alt = numeric()
     rv$new_calti = numeric()
+    rv$new_laser_alt = numeric()
     rv$new_bl = numeric()
     rv$new_widths = numeric()
     rv$new_fw = numeric()
@@ -866,6 +860,7 @@ server <- function(input, output, session) {
     shiny::updateTextInput(inputId = "ImageId", value = "")
     shiny::updateRadioButtons(inputId = "score", selected = 4)
     shiny::updateNumericInput(inputId = "alt", value = 20)
+    shiny::updateNumericInput(inputId = "laser_alt", value = 0)
     rv$plot_ranges_x = NULL
     rv$plot_ranges_y = NULL
 
@@ -878,77 +873,145 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$calib, {
     req(input$calib_path, rv$main, rv$secondary)
 
-    tryCatch({
-      rv$calib_path <- input$calib_path
+    if (input$alt_data == 1) {
+      tryCatch({
+        rv$calib_path <- input$calib_path
 
-      # Carregar e processar dados de calibração
-      rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
-        stats::na.omit()
+        rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
+          stats::na.omit()
 
-      # Treinar modelo
-      rv$calib_train <- caret::train(
-        as.numeric(eGSD) ~ as.numeric(C_Alt),
-        data = rv$calib_data,
-        method = "lm",
-        trControl = caret::trainControl(method = "repeatedcv",
-                                        number = 10,
-                                        repeats = 5)
-      )
-
-      rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
-                                  data = rv$calib_data)
-
-      rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
-      rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
-
-      # --- CONVERSÃO ISOLADA: MORPHOMETRICS VS FREE MEASUREMENTS ---
-      if (input$app_mode == "free") {
-
-        # 1. Lê a planilha do modo livre
-        df_free <- readxl::read_xlsx(rv$main)
-
-        # 2. Garante a coerção numérica para a predição
-        df_free$C_Alt <- as.numeric(df_free$C_Alt)
-        df_free$Pixel <- as.numeric(df_free$Pixel)
-
-        # 3. Prediz o cGSD (Ground Sample Distance) para cada medida com base na altitude
-        df_free$cGSD <- stats::predict(rv$calib_model, newdata = data.frame(C_Alt = df_free$C_Alt))
-
-        # 4. Multiplica o cGSD pelo comprimento em pixels para achar o tamanho real
-        df_free$EstLength <- df_free$cGSD * df_free$Pixel
-
-        # 5. Sobrescreve as planilhas
-        writexl::write_xlsx(df_free, rv$main)
-        writexl::write_xlsx(df_free, rv$secondary)
-
-        rv$main_data <- df_free
-        updated <- TRUE # Flag de controle manual
-
-      } else {
-        # Rotina nativa para Morphometrics
-        updated <- MedidoR:::update_measurements(
-          main_path = rv$main,
-          secondary_path = rv$secondary,
-          model = rv$calib_model,
-          calib_data = rv$calib_data,
-          current_data = NULL
+        rv$calib_train <- caret::train(
+          as.numeric(eGSD) ~ as.numeric(C_Alt),
+          data = rv$calib_data,
+          method = "lm",
+          trControl = caret::trainControl(method = "repeatedcv",
+                                          number = 10,
+                                          repeats = 5)
         )
-      }
-      # -------------------------------------------------------------
 
-      if (!is.null(updated)) {
-        output$mTable <- DT::renderDataTable({
-          MedidoR:::update_data_table(rv$secondary)
-        })
-        shiny::showNotification("Calibration applied successfully", type = "message")
-      }
+        rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(C_Alt),
+                                    data = rv$calib_data)
 
-    }, error = function(e) {
-      shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
-    })
+        rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
+        rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
+
+        if (input$app_mode == "free") {
+
+          df_free <- readxl::read_xlsx(rv$main)
+
+          df_free$C_Alt <- as.numeric(df_free$C_Alt)
+          df_free$Pixel <- as.numeric(df_free$Pixel)
+
+          df_free$cGSD <- stats::predict(rv$calib_model,
+                                         newdata = data.frame(C_Alt = df_free$C_Alt))
+
+          df_free$EstLength <- df_free$cGSD * df_free$Pixel
+
+          writexl::write_xlsx(df_free, rv$main)
+          writexl::write_xlsx(df_free, rv$secondary)
+
+          rv$main_data <- df_free
+          updated <- TRUE
+
+        }
+
+        else {
+          updated <- MedidoR:::update_measurements(
+            main_path = rv$main,
+            secondary_path = rv$secondary,
+            model = rv$calib_model,
+            calib_data = rv$calib_data,
+            current_data = NULL
+          )
+        }
+
+        # -------------------------------------------------------------
+
+        if (!is.null(updated)) {
+          output$mTable <- DT::renderDataTable({
+            MedidoR:::update_data_table(rv$secondary)
+          })
+          shiny::showNotification("Calibration applied successfully", type = "message")
+        }
+
+      }, error = function(e) {
+        shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
+      })
+    }
+
+    if (input$alt_data == 0) {
+      tryCatch({
+        rv$calib_path <- input$calib_path
+
+        rv$calib_data <- MedidoR:::calib(rv$calib_path) |>
+          stats::na.omit()
+
+        rv$calib_train <- caret::train(
+          as.numeric(eGSD) ~ as.numeric(Laser_Alt),
+          data = rv$calib_data,
+          method = "lm",
+          trControl = caret::trainControl(method = "repeatedcv",
+                                          number = 10,
+                                          repeats = 5)
+        )
+
+        rv$calib_model <- stats::lm(formula = as.numeric(eGSD) ~ as.numeric(Laser_Alt),
+                                    data = rv$calib_data)
+
+        rv$calib_data$cGSD <- stats::predict(rv$calib_model, rv$calib_data)
+        rv$calib_data$LcGSD <- rv$calib_data$cGSD * rv$calib_data$Pixel
+
+        if (input$app_mode == "free") {
+
+          df_free <- readxl::read_xlsx(rv$main)
+
+          df_free$C_Alt <- as.numeric(df_free$C_Alt)
+          df_free$Laser_Alt <- as.numeric(df_free$Laser_Alt)
+          df_free$Pixel <- as.numeric(df_free$Pixel)
+
+          df_free$cGSD <- stats::predict(rv$calib_model, newdata = data.frame(Laser_Alt = df_free$Laser_Alt))
+
+          df_free$EstLength <- df_free$cGSD * df_free$Pixel
+
+          df_free <- df_free |>
+            dplyr::mutate(
+              dplyr::across(
+                c(Pixel, C_Alt, TO_Alt, F_Alt, Laser_Alt, sw, iw, flen, EstLength),
+                \(x) round(as.numeric(x), digits = 2)
+              )
+            )
+
+          writexl::write_xlsx(df_free, rv$main)
+          writexl::write_xlsx(df_free, rv$secondary)
+
+          rv$main_data <- df_free
+          updated <- TRUE
+
+        } else {
+          updated <- MedidoR:::update_measurements(
+            main_path = rv$main,
+            secondary_path = rv$secondary,
+            model = rv$calib_model,
+            calib_data = rv$calib_data,
+            current_data = NULL
+          )
+        }
+        # -------------------------------------------------------------
+
+        if (!is.null(updated)) {
+          output$mTable <- DT::renderDataTable({
+            MedidoR:::update_data_table(rv$secondary)
+          })
+          shiny::showNotification("Calibration applied successfully", type = "message")
+        }
+
+      }, error = function(e) {
+        shiny::showNotification(paste("Calibration failed:", e$message), type = "error")
+      })
+    }
+
 
     if (input$save_plot == "Y") {
-      # Adicionado verificação de existência para evitar 'warnings' no console
       plot_dir <- file.path(rv$user_dir, "Model-Plots")
       if (!dir.exists(plot_dir)) {
         dir.create(plot_dir)
@@ -962,15 +1025,12 @@ server <- function(input, output, session) {
     req(input$calib, rv$calib_model)
 
     tryCatch({
-      # Configurar área de plotagem
       old_par <- par(no.readonly = TRUE)
       on.exit(par(old_par))
       par(mfrow = c(2, 2))
 
-      # Plotar diagnósticos
       plot(rv$calib_model)
 
-      # Salvar se necessário
       if (input$save_plot == "Y") {
         png(file.path(rv$user_dir,"Model-Plots", "Diagnostic_plot.png"),
             width = 10, height = 6, units = "in", res = 300)
@@ -1171,12 +1231,10 @@ server <- function(input, output, session) {
     tryCatch({
 
       if (input$app_mode == "free") {
-        # Rotina de exclusão para Free Measurements
+
         if (nrow(rv$free_points) > 0) {
-          # O argumento drop = FALSE previne a coerção silenciosa do data.frame para vetor numérico
           rv$free_points <- rv$free_points[-nrow(rv$free_points), , drop = FALSE]
 
-          # Recalcula a distância se houver segmentos válidos restantes
           if (nrow(rv$free_points) > 1) {
             distances <- sqrt(diff(rv$free_points$x)^2 + diff(rv$free_points$y)^2)
             rv$new_bl <- sum(distances)
@@ -1187,14 +1245,13 @@ server <- function(input, output, session) {
               type = "message", duration = 2
             )
           } else {
-            # Reseta as condições de salvamento se o segmento foi desfeito
             rv$new_bl <- numeric(0)
             rv$add_status <- TRUE
           }
         }
 
       } else {
-        # Rotina nativa de exclusão para Morphometrics
+
         if (nrow(rv$length_measurements) > 0 & nrow(rv$width_measurements) == 0) {
           rv$length_measurements <- rv$length_measurements[-nrow(rv$length_measurements), , drop = FALSE]
         }
