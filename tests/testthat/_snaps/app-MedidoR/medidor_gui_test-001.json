@@ -1,0 +1,104 @@
+{
+  "input": {
+    "Date": "2022-08-01",
+    "ImageID": "RW-1",
+    "ImageRES": "2.7k",
+    "Species": "Eubalaena australis",
+    "alt": 22.5,
+    "alt_data": "1",
+    "app_mode": "morpho",
+    "calib": 0,
+    "calib_path": "",
+    "clearBtn": 0,
+    "closeBtn": 0,
+    "comments": "",
+    "confirmBtn": 1,
+    "create": 1,
+    "crop": 1,
+    "drone": "MA2",
+    "file": {
+      "name": [
+        "example_whale.png"
+      ],
+      "size": [
+        2764544
+      ],
+      "type": [
+        "image/png"
+      ],
+      "datapath": [
+        "0.png"
+      ]
+    },
+    "flen": "7.6",
+    "import": 1,
+    "laser_alt": 0,
+    "main_tabs": "Image plot",
+    "n_whales": 0,
+    "new_free_measure": 0,
+    "obs": "Observer 1",
+    "path": 1,
+    "plot_brush": null,
+    "plot_click": null,
+    "saveBtn": 0,
+    "save_plot": "Y",
+    "score": "1",
+    "segments": "1",
+    "sw": "6.4",
+    "takeof": 0.5,
+    "undo": 0,
+    "wd": "G:/Meu Drive/Drive_Work/_Lucas Oliveira/REPOS/MeDiDOR/inst/extdata/medidor_test"
+  },
+  "output": {
+    "add_status": {
+      "html": "<div class=\"alert alert-info\">Step 2: After completing the measurements, click on 'Add-IN button' to save<\/div>",
+      "deps": [
+
+      ]
+    },
+    "crop_status": {
+      "html": "<div class=\"alert alert-success\">Area selected!<\/div>",
+      "deps": [
+
+      ]
+    },
+    "imagePlot": {
+      "src": "[image data hash: 989f189156e1e8dc3fd5e1b858ea1490]",
+      "width": 1080,
+      "height": 720,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": 748.9,
+              "right": 2075.1,
+              "bottom": 1249.333720930233,
+              "top": 462.8662790697674
+            },
+            "range": {
+              "left": 59.03999999999997,
+              "right": 1049.76,
+              "bottom": 645.5600000000001,
+              "top": 58.04000000000005
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 1080,
+          "height": 720
+        }
+      }
+    }
+  },
+  "export": {
+
+  }
+}

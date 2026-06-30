@@ -3,74 +3,77 @@ library(shinytest2)
 test_that("{shinytest2} recording: calib_gui_test", {
   local_app_support(test_path("../../inst/shiny-apps/Calib"))
   app <- AppDriver$new(test_path("../../inst/shiny-apps/Calib"), name = "calib_gui_test",
-      seed = 123, height = 911, width = 1619)
-  app$click("path")
-  app$click("confirmBtn")
-  calib_wd <- system.file("extdata", "calib_test", package = "MedidoR")
+                       seed = 123, height = 911, width = 1619)
+
+
   app$click("path")
   app$wait_for_idle()
+
+  calib_wd <- system.file("extdata", "calib_test", package = "MedidoR")
   app$set_inputs(wd = calib_wd)
   app$click("confirmBtn")
   app$wait_for_idle()
+
+  app$click("create")
+  app$wait_for_idle()
+
   app$click("import")
-  img_calib_path <- system.file("extdata", "calib_test", "Molde_15M_1.png", package = "MedidoR")
-  if (img_calib_path == "") stop("Calibration test image not found in the extdata folder.")
+  app$wait_for_idle()
+
+  img_calib_path <- system.file("extdata", "calib_test", "Calib_15M_1.png", package = "MedidoR")
+  if (img_calib_path == "") {
+    stop("Image 'Calib_15M_1.png' not found in dir inst/extdata/calib_test.")
+  }
   app$upload_file(file = img_calib_path)
-  app$set_inputs(plot_click = character(0), allow_no_input_binding_ = TRUE)
-  app$set_inputs(plot_brush = character(0), allow_no_input_binding_ = TRUE)
-  app$set_inputs(objL = "2")
-  app$set_inputs(ImageID = "15m_1")
-  app$set_inputs(ImageRES = "4k")
-  app$set_inputs(sw = "13.2")
-  app$set_inputs(flen = "8.8")
-  app$set_inputs(drone = "P4P")
-  app$set_inputs(alt = 10)
-  app$set_inputs(alt = 14.7)
-  app$set_inputs(takeof = 0)
-  app$set_inputs(takeof = 1.2)
-  app$set_inputs(takeof = character(0))
-  app$set_inputs(takeof = 1.8)
-  app$set_inputs(Date = "2019-08-13")
-  app$set_inputs(obs = "Observer 1")
-  app$set_inputs(plot_click = c(1851.80384720203, 1002.98662904251, 506.8125, 333.046875,
-      506.8125, 333.046875, 1, 1, 0.999999999999773, 4096, 2294.71511627907, -133.71511627907,
-      59.04, 1049.76, 645.56, 58.04, character(0), character(0)), allow_no_input_binding_ = TRUE,
-      priority_ = "event")
-  app$set_inputs(plot_brush = c(1851.803847202, 2587.5414925509, 1002.9866290425,
-      1457.6559604379, 506.8125, 684.8125, 333.046875, 443.046875, 506.8125, 684.8125,
-      333.046875, 443.046875, 1, 1, 0.999999999999773, 4096, 2294.71511627907, -133.71511627907,
-      59.04, 1049.76, 645.56, 58.04, character(0), character(0), "xy", "plot_brush",
-      "imagePlot"), allow_no_input_binding_ = TRUE)
-  app$click("crop")
-  app$set_inputs(plot_click = c(2054.3818102982, 1206.52210019011, 340.8125, 321.046875,
-      340.8125, 321.046875, 1, 1, 1836.32401791562, 2603.02132183728, 1457.6559604379,
-      1002.9866290425, 59.0400000000002, 1049.76, 645.56, 58.04, character(0), character(0)),
-      allow_no_input_binding_ = TRUE, priority_ = "event")
-  app$set_inputs(plot_click = c(2370.124401545, 1203.42658458965, 748.8125, 317.046875,
-      748.8125, 317.046875, 1, 1, 1836.32401791562, 2603.02132183728, 1457.6559604379,
-      1002.9866290425, 59.0400000000002, 1049.76, 645.56, 58.04, character(0), character(0)),
-      allow_no_input_binding_ = TRUE, priority_ = "event")
+  app$wait_for_idle(timeout = 5000)
+
+  app$set_inputs(main_tabs = "Image plot")
+  app$wait_for_idle()
+
+  app$set_inputs(
+    objL = "2",
+    ImageID = "15m_1",
+    ImageRES = "4k",
+    sw = "13.2",
+    flen = "8.8",
+    drone = "P4P",
+    alt = 14.7,
+    laser_alt = 0,
+    takeof = 1.5,
+    Date = "2019-08-13",
+    obs = "Observer 1",
+    wait_ = FALSE
+  )
+
+  app$set_inputs(
+    plot_brush = list(
+      xmin = 1851.803847202,
+      xmax = 2587.5414925509,
+      ymin = 1002.9866290425,
+      ymax = 1457.6559604379
+    ),
+    allow_no_input_binding_ = TRUE
+  )
+
+  app$click("crop", wait_ = FALSE)
+
+  app$set_inputs(plot_click = list(x = 2054.38, y = 1206.52), allow_no_input_binding_ = TRUE, priority_ = "event")
+  app$set_inputs(plot_click = list(x = 2369.4, y = 1202.8), allow_no_input_binding_ = TRUE, priority_ = "event")
+
+  app$expect_values()
+
   app$click("saveBtn")
+  app$wait_for_idle()
+
   app$click("clearBtn")
+
   app$click("confirm_reset")
-  app$click("confirm_reset")
-  app$set_inputs(mTable_rows_current = 1, allow_no_input_binding_ = TRUE)
-  app$set_inputs(mTable_rows_all = 1, allow_no_input_binding_ = TRUE)
-  app$set_inputs(mTable_state = c(1782743336559, 0, 10, "", TRUE, FALSE, TRUE, c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE,
-      TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE,
-      TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE,
-      TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE)), allow_no_input_binding_ = TRUE)
-  app$set_inputs(mTable_state = c(1782743341653, 0, 100, "", TRUE, FALSE, TRUE, c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE,
-      TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE,
-      TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE,
-      TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE), c(TRUE,
-      "", TRUE, FALSE, TRUE), c(TRUE, "", TRUE, FALSE, TRUE)), allow_no_input_binding_ = TRUE)
+  app$wait_for_idle()
+
+  app$expect_values()
+
+  app$set_inputs(main_tabs = "Dataframe")
+  app$wait_for_idle()
+
   app$expect_values()
 })

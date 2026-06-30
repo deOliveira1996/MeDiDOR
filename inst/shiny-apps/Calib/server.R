@@ -343,25 +343,29 @@ server <- function(input, output, session) {
   # Create New Entry function
   create_new_entry2 <- function() {
 
+    safe_char <- function(x) { if (is.null(x) || length(x) == 0 || trimws(as.character(x)) == "") NA_character_ else as.character(x) }
+    safe_num <- function(x) { if (is.null(x) || length(x) == 0 || is.na(x) || trimws(as.character(x)) == "") NA_real_ else as.numeric(x) }
+
     new_entry <- data.frame(
-      Drone = as.character(rv$new_drone),
-      Resolution = as.character(rv$new_res),
-      ID = as.character(rv$new_id),
-      Obs = as.character(input$obs),
-      Date = as.character(rv$new_date),
+      Drone = safe_char(rv$new_drone),
+      Resolution = safe_char(rv$new_res),
+      ID = safe_char(rv$new_id),
+      Obs = safe_char(input$obs),
+      Date = safe_char(rv$new_date),
       Measured_Date = as.character(format(as.POSIXct(Sys.time()),
                                           "%Y-%m-%d %H:%M:%S")),
-      TO_Alt = as.numeric(rv$new_to_alt),
-      F_Alt = as.numeric(rv$new_f_alt),
-      C_Alt = as.numeric(rv$new_calti),
-      Laser_Alt = as.numeric(rv$new_laser_alt),
-      OBJ_L = as.numeric(rv$new_objL),
-      OBJ_P = round(as.numeric(rv$new_objP), 2),
-      sw = as.numeric(rv$new_sw),
-      iw = as.numeric(rv$new_iw),
-      flen = as.numeric(rv$new_flen),
-      imid = as.character(rv$new_imid),
-      Comments = as.character(input$comments)
+      TO_Alt = safe_num(rv$new_to_alt),
+      F_Alt = safe_num(rv$new_f_alt),
+      C_Alt = safe_num(rv$new_calti),
+      Laser_Alt = safe_num(rv$new_laser_alt),
+      OBJ_L = safe_num(rv$new_objL),
+      OBJ_P = round(safe_num(rv$new_objP), 2),
+      sw = safe_num(rv$new_sw),
+      iw = safe_num(rv$new_iw),
+      flen = safe_num(rv$new_flen),
+      imid = safe_char(rv$new_imid),
+      Comments = safe_char(input$comments),
+      stringsAsFactors = FALSE
     )
 
     return(new_entry)
@@ -373,10 +377,10 @@ server <- function(input, output, session) {
 
       rv$main_data <- readxl::read_xlsx(rv$main, col_names = T) |>
         dplyr::mutate(
-          dplyr::across(c(F_Alt, TO_Alt, C_Alt, Laser_Alt, OBJ_L,
-                          OBJ_P, sw, iw, flen), as.numeric),
-          dplyr::across(c(Drone, Obs, Resolution, Date,
-                          Measured_Date, ID, Comments, imid), as.character)
+          dplyr::across(tidyselect::any_of(c("F_Alt", "TO_Alt", "C_Alt", "Laser_Alt", "OBJ_L",
+                                             "OBJ_P", "sw", "iw", "flen")), as.numeric),
+          dplyr::across(tidyselect::any_of(c("Drone", "Obs", "Resolution", "Date",
+                                             "Measured_Date", "ID", "Comments", "imid")), as.character)
         )
 
       rv$current_data <- dplyr::bind_rows(rv$main_data, new_entry)
@@ -386,10 +390,10 @@ server <- function(input, output, session) {
       rv$add_status <- TRUE
 
       shiny::showModal(
-        modalDialog(
+        shiny::modalDialog(
           title = "Saved",
           "Scale measurements stored successfully",
-          footer = modalButton("OK")
+          footer = shiny::modalButton("OK")
         )
       )
       return(TRUE)
@@ -398,6 +402,26 @@ server <- function(input, output, session) {
       return(FALSE)
     })
   }
+
+  # Save system ----
+  shiny::observeEvent(input$saveBtn, {
+    req(rv$main_data)
+    tryCatch({
+      new_entry <- create_new_entry2()
+
+      save_data(new_entry = new_entry)
+
+      rv$click_save <- TRUE
+
+      output$mTable <- DT::renderDataTable({
+        rv$current_data
+      })
+      return(TRUE)
+    }, error = function(e) {
+      showNotification(paste("Error when saving:", e$message), type = "error")
+      return(FALSE)
+    })
+  })
 
   # Save system ----
   shiny::observeEvent(input$saveBtn, {

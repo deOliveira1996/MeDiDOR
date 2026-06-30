@@ -133,6 +133,7 @@ ui <- shiny::fluidPage(
     shiny::mainPanel(
       width = 8,
       shiny::tabsetPanel(
+        id = "main_tabs",
         type = "tabs",
         shiny::tabPanel(
           "Instructions",
