@@ -34,8 +34,7 @@ Imports:
     tidyverse,
     ggplot2,
     lattice,
-    Hmisc,
-    vctrs
+    Hmisc
 RoxygenNote: 7.3.3
 Suggests: 
     shinytest2,
