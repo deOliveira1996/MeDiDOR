@@ -14,8 +14,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.1.0),
-    vctrs (>= 0.7.1)
+    R (>= 4.1.0)
 Imports:
     stats,
     utils,
@@ -34,8 +33,7 @@ Imports:
     tidyverse,
     ggplot2,
     lattice,
-    Hmisc,
-    vctrs
+    Hmisc
 RoxygenNote: 7.3.3
 Suggests: 
     shinytest2,
