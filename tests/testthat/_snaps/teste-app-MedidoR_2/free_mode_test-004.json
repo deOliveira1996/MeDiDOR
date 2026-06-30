@@ -1,0 +1,641 @@
+{
+  "input": {
+    "Date": "2022-08-01",
+    "ImageID": "RW-1",
+    "ImageRES": "2.7k",
+    "Species": "Eubalaena australis",
+    "alt": 22.5,
+    "alt_data": "1",
+    "app_mode": "free",
+    "calib": 1,
+    "calib_path": "G:/Meu Drive/Drive_Work/_Lucas Oliveira/REPOS/MeDiDOR/inst/extdata/medidor_test/calib.xlsx",
+    "clearBtn": 0,
+    "closeBtn": 0,
+    "comments": "",
+    "confirmBtn": 1,
+    "continue_free": 0,
+    "create": 1,
+    "crop": 1,
+    "drone": "MA2",
+    "file": {
+      "name": [
+        "example_whale.png"
+      ],
+      "size": [
+        2764544
+      ],
+      "type": [
+        "image/png"
+      ],
+      "datapath": [
+        "0.png"
+      ]
+    },
+    "finish_free": 1,
+    "flen": "7.6",
+    "free_measure_id": "MID-GIRTH",
+    "import": 1,
+    "laser_alt": 0,
+    "mTable_cell_clicked": {
+
+    },
+    "mTable_cells_selected": [
+
+    ],
+    "mTable_columns_selected": null,
+    "mTable_rows_all": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "mTable_rows_current": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "mTable_rows_selected": null,
+    "mTable_search": "",
+    "mTable_state": {
+      "start": 0,
+      "length": 11,
+      "order": [
+
+      ],
+      "search": {
+        "search": "",
+        "smart": true,
+        "regex": false,
+        "caseInsensitive": true
+      },
+      "columns": [
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        }
+      ]
+    },
+    "main_tabs": "Dataframe",
+    "n_whales": 0,
+    "new_free_measure": 1,
+    "obs": "Observer 1",
+    "path": 1,
+    "plot_brush": null,
+    "plot_click": null,
+    "saveBtn": 2,
+    "save_plot": "Y",
+    "score": "1",
+    "segments": "2",
+    "start_free_measure": 2,
+    "sw": "6.4",
+    "takeof": 0.5,
+    "undo": 0,
+    "wd": "G:/Meu Drive/Drive_Work/_Lucas Oliveira/REPOS/MeDiDOR/inst/extdata/medidor_test"
+  },
+  "output": {
+    "add_status": {
+      "html": "<div class=\"alert alert-info\">Step 2: After completing the measurements, click on 'Add-IN button' to save<\/div>",
+      "deps": [
+
+      ]
+    },
+    "checkm": {
+      "src": "[image data hash: 394291f69aa26b85cefe0986dd6ed5ea]",
+      "width": 964.328125,
+      "height": 600,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": -0.04,
+              "right": 1.04,
+              "bottom": -0.04,
+              "top": 1.04
+            },
+            "range": {
+              "left": 59.06009595435683,
+              "right": 934.0778319502074,
+              "bottom": 525.5600000000001,
+              "top": 58.04000000000009
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 964.328125,
+          "height": 600
+        }
+      }
+    },
+    "crop_status": {
+      "html": "<div class=\"alert alert-success\">Area selected!<\/div>",
+      "deps": [
+
+      ]
+    },
+    "imagePlot": {
+      "src": "[image data hash: f5628d555e28140e683196c070fea686]",
+      "width": 1080,
+      "height": 720,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": 759.7,
+              "right": 2067,
+              "bottom": 1212.529651162791,
+              "top": 437.2703488372092
+            },
+            "range": {
+              "left": 59.03999999999997,
+              "right": 1049.76,
+              "bottom": 645.5600000000001,
+              "top": 58.03999999999997
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 1080,
+          "height": 720
+        }
+      }
+    },
+    "mTable": {
+      "x": {
+        "filter": "none",
+        "vertical": false,
+        "container": "<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Drone<\/th>\n      <th>Resolution<\/th>\n      <th>ID<\/th>\n      <th>Obs<\/th>\n      <th>Species<\/th>\n      <th>Date<\/th>\n      <th>Measured_Date<\/th>\n      <th>TO_Alt<\/th>\n      <th>F_Alt<\/th>\n      <th>C_Alt<\/th>\n      <th>Laser_Alt<\/th>\n      <th>Frame_Score<\/th>\n      <th>sw<\/th>\n      <th>iw<\/th>\n      <th>flen<\/th>\n      <th>imid<\/th>\n      <th>Segments<\/th>\n      <th>Pixel<\/th>\n      <th>cGSD<\/th>\n      <th>EstLength<\/th>\n      <th>Comments<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>",
+        "options": {
+          "pageLength": 11,
+          "autoWidth": true,
+          "serverSide": true,
+          "columnDefs": [
+            {
+              "className": "dt-right",
+              "targets": [
+                8,
+                9,
+                10,
+                11,
+                13,
+                14,
+                15,
+                18,
+                19,
+                20
+              ]
+            },
+            {
+              "orderable": false,
+              "targets": 0
+            },
+            {
+              "name": " ",
+              "targets": 0
+            },
+            {
+              "name": "Drone",
+              "targets": 1
+            },
+            {
+              "name": "Resolution",
+              "targets": 2
+            },
+            {
+              "name": "ID",
+              "targets": 3
+            },
+            {
+              "name": "Obs",
+              "targets": 4
+            },
+            {
+              "name": "Species",
+              "targets": 5
+            },
+            {
+              "name": "Date",
+              "targets": 6
+            },
+            {
+              "name": "Measured_Date",
+              "targets": 7
+            },
+            {
+              "name": "TO_Alt",
+              "targets": 8
+            },
+            {
+              "name": "F_Alt",
+              "targets": 9
+            },
+            {
+              "name": "C_Alt",
+              "targets": 10
+            },
+            {
+              "name": "Laser_Alt",
+              "targets": 11
+            },
+            {
+              "name": "Frame_Score",
+              "targets": 12
+            },
+            {
+              "name": "sw",
+              "targets": 13
+            },
+            {
+              "name": "iw",
+              "targets": 14
+            },
+            {
+              "name": "flen",
+              "targets": 15
+            },
+            {
+              "name": "imid",
+              "targets": 16
+            },
+            {
+              "name": "Segments",
+              "targets": 17
+            },
+            {
+              "name": "Pixel",
+              "targets": 18
+            },
+            {
+              "name": "cGSD",
+              "targets": 19
+            },
+            {
+              "name": "EstLength",
+              "targets": 20
+            },
+            {
+              "name": "Comments",
+              "targets": 21
+            }
+          ],
+          "order": [
+
+          ],
+          "orderClasses": false,
+          "lengthMenu": [
+            10,
+            11,
+            25,
+            50,
+            100
+          ],
+          "ajax": {
+            "type": "POST",
+            "data": "function(d) {\nd.search.caseInsensitive = true;\nd.search.smart = true;\nd.escape = true;\nvar encodeAmp = function(x) { x.value = x.value.replace(/&/g, \"%26\"); }\nencodeAmp(d.search);\n$.each(d.columns, function(i, v) {encodeAmp(v.search);});\n}"
+          },
+          "processing": true
+        },
+        "selection": {
+          "mode": "multiple",
+          "selected": null,
+          "target": "row",
+          "selectable": null
+        }
+      },
+      "evals": [
+        "options.ajax.data"
+      ],
+      "jsHooks": [
+
+      ],
+      "deps": [
+        {
+          "name": "jquery",
+          "version": "3.6.0",
+          "src": {
+            "href": "jquery-3.6.0"
+          },
+          "meta": null,
+          "script": "jquery-3.6.0.min.js",
+          "stylesheet": null,
+          "head": null,
+          "attachment": null,
+          "all_files": true
+        },
+        {
+          "name": "dt-core",
+          "version": "1.13.6",
+          "src": {
+            "href": "dt-core-1.13.6"
+          },
+          "meta": null,
+          "script": "js/jquery.dataTables.min.js",
+          "stylesheet": [
+            "css/jquery.dataTables.min.css",
+            "css/jquery.dataTables.extra.css"
+          ],
+          "head": null,
+          "attachment": null,
+          "package": null,
+          "all_files": false
+        },
+        {
+          "name": "crosstalk",
+          "version": "1.2.2",
+          "src": {
+            "href": "crosstalk-1.2.2"
+          },
+          "meta": null,
+          "script": "js/crosstalk.min.js",
+          "stylesheet": "css/crosstalk.min.css",
+          "head": null,
+          "attachment": null,
+          "all_files": true
+        }
+      ]
+    },
+    "mplot": {
+      "src": "[image data hash: b87d20d0d715478a75c3a7e05705187b]",
+      "width": 964.328125,
+      "height": 600,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": -0.04,
+              "right": 1.04,
+              "bottom": -0.04,
+              "top": 1.04
+            },
+            "range": {
+              "left": 0,
+              "right": 964.328125,
+              "bottom": 599,
+              "top": -1
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 964.328125,
+          "height": 600
+        }
+      }
+    },
+    "variance": {
+      "src": "[image data hash: 7ac351b4871c0e1e50a4623bc01e0fa7]",
+      "width": 964.328125,
+      "height": 600,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": -0.04,
+              "right": 1.04,
+              "bottom": -0.04,
+              "top": 1.04
+            },
+            "range": {
+              "left": 0,
+              "right": 964.328125,
+              "bottom": 599,
+              "top": -1
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 964.328125,
+          "height": 600
+        }
+      }
+    }
+  },
+  "export": {
+
+  }
+}

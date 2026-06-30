@@ -1,0 +1,94 @@
+{
+  "input": {
+    "Date": "2019-08-13",
+    "ImageID": "15m_1",
+    "ImageRES": "4k",
+    "alt": 14.7,
+    "clearBtn": 0,
+    "closeBtn": 0,
+    "comments": "",
+    "confirmBtn": 1,
+    "create": 1,
+    "crop": 1,
+    "drone": "P4P",
+    "file": {
+      "name": [
+        "Calib_15M_1.png"
+      ],
+      "size": [
+        4825914
+      ],
+      "type": [
+        "image/png"
+      ],
+      "datapath": [
+        "0.png"
+      ]
+    },
+    "flen": "8.8",
+    "import": 1,
+    "laser_alt": 0,
+    "main_tabs": "Image plot",
+    "objL": "2",
+    "obs": "Observer 1",
+    "path": 1,
+    "plot_brush": null,
+    "plot_click": null,
+    "saveBtn": 0,
+    "sw": "13.2",
+    "takeof": 1.5,
+    "wd": "G:/Meu Drive/Drive_Work/_Lucas Oliveira/REPOS/MeDiDOR/inst/extdata/calib_test"
+  },
+  "output": {
+    "add_status": {
+      "html": "<div class=\"alert alert-info\">Step 2: After completing the measurements, click on 'Add-IN button' to save<\/div>",
+      "deps": [
+
+      ]
+    },
+    "crop_status": {
+      "html": "<div class=\"alert alert-success\">Area selected!<\/div>",
+      "deps": [
+
+      ]
+    },
+    "imagePlot": {
+      "src": "[image data hash: e9ac648d5e6855bed1987a784a8ee8ad]",
+      "width": 1080,
+      "height": 720,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": 1836.324017915623,
+              "right": 2603.021321837277,
+              "bottom": 1457.6559604379,
+              "top": 1002.9866290425
+            },
+            "range": {
+              "left": 59.04000000000021,
+              "right": 1049.76,
+              "bottom": 645.5600000000001,
+              "top": 58.04000000000005
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 1080,
+          "height": 720
+        }
+      }
+    }
+  },
+  "export": {
+
+  }
+}

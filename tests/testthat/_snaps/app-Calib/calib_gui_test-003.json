@@ -1,0 +1,462 @@
+{
+  "input": {
+    "Date": "2019-08-13",
+    "ImageID": "",
+    "ImageRES": "4k",
+    "alt": 20,
+    "clearBtn": 1,
+    "closeBtn": 0,
+    "comments": "",
+    "confirmBtn": 1,
+    "confirm_reset": 1,
+    "create": 1,
+    "crop": 1,
+    "drone": "P4P",
+    "file": {
+      "name": [
+        "Calib_15M_1.png"
+      ],
+      "size": [
+        4825914
+      ],
+      "type": [
+        "image/png"
+      ],
+      "datapath": [
+        "0.png"
+      ]
+    },
+    "flen": "8.8",
+    "import": 1,
+    "laser_alt": 0,
+    "mTable_cell_clicked": {
+
+    },
+    "mTable_cells_selected": [
+
+    ],
+    "mTable_columns_selected": null,
+    "mTable_rows_all": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "mTable_rows_current": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "mTable_rows_selected": null,
+    "mTable_search": "",
+    "mTable_state": {
+      "start": 0,
+      "length": 10,
+      "order": [
+
+      ],
+      "search": {
+        "search": "",
+        "smart": true,
+        "regex": false,
+        "caseInsensitive": true
+      },
+      "columns": [
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        },
+        {
+          "visible": true,
+          "search": {
+            "search": "",
+            "smart": true,
+            "regex": false,
+            "caseInsensitive": true
+          }
+        }
+      ]
+    },
+    "main_tabs": "Dataframe",
+    "objL": "2",
+    "obs": "Observer 1",
+    "path": 1,
+    "plot_brush": null,
+    "plot_click": null,
+    "saveBtn": 1,
+    "sw": "13.2",
+    "takeof": 1.5,
+    "wd": "G:/Meu Drive/Drive_Work/_Lucas Oliveira/REPOS/MeDiDOR/inst/extdata/calib_test"
+  },
+  "output": {
+    "add_status": {
+      "html": "<div class=\"alert alert-success\">The scale measurements have been saved!<\/div>",
+      "deps": [
+
+      ]
+    },
+    "crop_status": {
+      "html": "<div class=\"alert alert-info\">Step 1: Select the area of interest on the image using the selection tool and click 'Crop'<\/div>",
+      "deps": [
+
+      ]
+    },
+    "imagePlot": {
+      "src": "[image data hash: 1bc99bf6f3cad53a59ab641f337a98e7]",
+      "width": 1080,
+      "height": 720,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": 0.9999999999997726,
+              "right": 4096,
+              "bottom": 2294.71511627907,
+              "top": -133.7151162790701
+            },
+            "range": {
+              "left": 59.03999999999998,
+              "right": 1049.76,
+              "bottom": 645.5600000000001,
+              "top": 58.03999999999997
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 1080,
+          "height": 720
+        }
+      }
+    },
+    "mTable": {
+      "x": {
+        "filter": "none",
+        "vertical": false,
+        "container": "<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Drone<\/th>\n      <th>Resolution<\/th>\n      <th>ID<\/th>\n      <th>Obs<\/th>\n      <th>Date<\/th>\n      <th>Measured_Date<\/th>\n      <th>TO_Alt<\/th>\n      <th>F_Alt<\/th>\n      <th>C_Alt<\/th>\n      <th>Laser_Alt<\/th>\n      <th>OBJ_L<\/th>\n      <th>OBJ_P<\/th>\n      <th>sw<\/th>\n      <th>iw<\/th>\n      <th>flen<\/th>\n      <th>imid<\/th>\n      <th>Comments<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>",
+        "options": {
+          "columnDefs": [
+            {
+              "className": "dt-right",
+              "targets": [
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15
+              ]
+            },
+            {
+              "orderable": false,
+              "targets": 0
+            },
+            {
+              "name": " ",
+              "targets": 0
+            },
+            {
+              "name": "Drone",
+              "targets": 1
+            },
+            {
+              "name": "Resolution",
+              "targets": 2
+            },
+            {
+              "name": "ID",
+              "targets": 3
+            },
+            {
+              "name": "Obs",
+              "targets": 4
+            },
+            {
+              "name": "Date",
+              "targets": 5
+            },
+            {
+              "name": "Measured_Date",
+              "targets": 6
+            },
+            {
+              "name": "TO_Alt",
+              "targets": 7
+            },
+            {
+              "name": "F_Alt",
+              "targets": 8
+            },
+            {
+              "name": "C_Alt",
+              "targets": 9
+            },
+            {
+              "name": "Laser_Alt",
+              "targets": 10
+            },
+            {
+              "name": "OBJ_L",
+              "targets": 11
+            },
+            {
+              "name": "OBJ_P",
+              "targets": 12
+            },
+            {
+              "name": "sw",
+              "targets": 13
+            },
+            {
+              "name": "iw",
+              "targets": 14
+            },
+            {
+              "name": "flen",
+              "targets": 15
+            },
+            {
+              "name": "imid",
+              "targets": 16
+            },
+            {
+              "name": "Comments",
+              "targets": 17
+            }
+          ],
+          "order": [
+
+          ],
+          "autoWidth": false,
+          "orderClasses": false,
+          "ajax": {
+            "type": "POST",
+            "data": "function(d) {\nd.search.caseInsensitive = true;\nd.search.smart = true;\nd.escape = true;\nvar encodeAmp = function(x) { x.value = x.value.replace(/&/g, \"%26\"); }\nencodeAmp(d.search);\n$.each(d.columns, function(i, v) {encodeAmp(v.search);});\n}"
+          },
+          "serverSide": true,
+          "processing": true
+        },
+        "selection": {
+          "mode": "multiple",
+          "selected": null,
+          "target": "row",
+          "selectable": null
+        }
+      },
+      "evals": [
+        "options.ajax.data"
+      ],
+      "jsHooks": [
+
+      ],
+      "deps": [
+        {
+          "name": "jquery",
+          "version": "3.6.0",
+          "src": {
+            "href": "jquery-3.6.0"
+          },
+          "meta": null,
+          "script": "jquery-3.6.0.min.js",
+          "stylesheet": null,
+          "head": null,
+          "attachment": null,
+          "all_files": true
+        },
+        {
+          "name": "dt-core",
+          "version": "1.13.6",
+          "src": {
+            "href": "dt-core-1.13.6"
+          },
+          "meta": null,
+          "script": "js/jquery.dataTables.min.js",
+          "stylesheet": [
+            "css/jquery.dataTables.min.css",
+            "css/jquery.dataTables.extra.css"
+          ],
+          "head": null,
+          "attachment": null,
+          "package": null,
+          "all_files": false
+        },
+        {
+          "name": "crosstalk",
+          "version": "1.2.2",
+          "src": {
+            "href": "crosstalk-1.2.2"
+          },
+          "meta": null,
+          "script": "js/crosstalk.min.js",
+          "stylesheet": "css/crosstalk.min.css",
+          "head": null,
+          "attachment": null,
+          "all_files": true
+        }
+      ]
+    }
+  },
+  "export": {
+
+  }
+}

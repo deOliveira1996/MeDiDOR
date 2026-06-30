@@ -1,0 +1,95 @@
+{
+  "input": {
+    "Date": "2019-08-13",
+    "ImageID": "",
+    "ImageRES": "4k",
+    "alt": 20,
+    "clearBtn": 1,
+    "closeBtn": 0,
+    "comments": "",
+    "confirmBtn": 1,
+    "confirm_reset": 1,
+    "create": 1,
+    "crop": 1,
+    "drone": "P4P",
+    "file": {
+      "name": [
+        "Calib_15M_1.png"
+      ],
+      "size": [
+        4825914
+      ],
+      "type": [
+        "image/png"
+      ],
+      "datapath": [
+        "0.png"
+      ]
+    },
+    "flen": "8.8",
+    "import": 1,
+    "laser_alt": 0,
+    "main_tabs": "Image plot",
+    "objL": "2",
+    "obs": "Observer 1",
+    "path": 1,
+    "plot_brush": null,
+    "plot_click": null,
+    "saveBtn": 1,
+    "sw": "13.2",
+    "takeof": 1.5,
+    "wd": "G:/Meu Drive/Drive_Work/_Lucas Oliveira/REPOS/MeDiDOR/inst/extdata/calib_test"
+  },
+  "output": {
+    "add_status": {
+      "html": "<div class=\"alert alert-success\">The scale measurements have been saved!<\/div>",
+      "deps": [
+
+      ]
+    },
+    "crop_status": {
+      "html": "<div class=\"alert alert-info\">Step 1: Select the area of interest on the image using the selection tool and click 'Crop'<\/div>",
+      "deps": [
+
+      ]
+    },
+    "imagePlot": {
+      "src": "[image data hash: 1bc99bf6f3cad53a59ab641f337a98e7]",
+      "width": 1080,
+      "height": 720,
+      "alt": "Plot object",
+      "coordmap": {
+        "panels": [
+          {
+            "domain": {
+              "left": 0.9999999999997726,
+              "right": 4096,
+              "bottom": 2294.71511627907,
+              "top": -133.7151162790701
+            },
+            "range": {
+              "left": 59.03999999999998,
+              "right": 1049.76,
+              "bottom": 645.5600000000001,
+              "top": 58.03999999999997
+            },
+            "log": {
+              "x": null,
+              "y": null
+            },
+            "mapping": {
+
+            }
+          }
+        ],
+        "dims": {
+          "width": 1080,
+          "height": 720
+        }
+      }
+    }
+  },
+  "export": {
+
+  }
+}
